@@ -1,6 +1,6 @@
 grammar = r"""query_unit: query
 
-query: prologue ( values_clause )
+query: prologue values_clause
 
 prologue: ( base_decl | prefix_decl )*
 
@@ -14,7 +14,27 @@ pname_ns: PNAME_NS
 
 prefix: PREFIX
 
-values_clause: ( "VALUES" data_block )?
+# select_query: select_clause dataset_clause* where_clause solution_modifier
+# 
+# select_clause: /SELECT/i ( /DISTINCT/i | /REDUCED/i )? ( ( var | ( "(" expression /AS/i var ")" ) )+ | "*" )
+# 
+# expression: conditional_or_expression
+# 
+# conditional_or_expression: conditional_and_expression ( "||" conditional_and_expression )*
+# 
+# conditional_and_expression: value_logical ( "&&" value_logical )*
+# 
+# value_logical: relational_expression
+# 
+# relational_expression: numeric_expression ( "=" numeric_expression | "!=" numeric_expression | "<" numeric_expression | ">" numeric_expression "<=" numeric_expression | ">=" numeric_expression | /IN/i expression_list | /NOT/i /IN/i expression_list )?
+# 
+# numeric_expression: additive_expression
+# 
+# additive_expression: multiplicative_expression ( "+" multiplicative_expression | "-" multiplicative_expression | ( numeric_literal_positive | numeric_literal_negative ) ( ( "*" unary_expression ) | ( "/" unary_expression ) )* )*
+# 
+# expression_list: NIL | "(" expression ( "," expression )* ")"
+
+values_clause: ( /VALUES/i data_block )?
 
 data_block: inline_data_one_var | inline_data_full
 
@@ -22,7 +42,7 @@ inline_data_one_var: var left_curly_brace data_block_value* right_curly_brace
 
 inline_data_full: ( NIL | left_parenthesis var* right_parenthesis ) left_curly_brace ( left_parenthesis data_block_value* right_parenthesis | NIL )* right_curly_brace
 
-data_block_value: iri | rdf_literal | numeric_literal | boolean_literal | "UNDEF" -> undef
+data_block_value: iri | rdf_literal | numeric_literal | boolean_literal | undef
 
 left_curly_brace: LEFT_CURLY_BRACE
 
@@ -46,6 +66,8 @@ langtag: LANGTAG
 
 boolean_literal: true | false
 
+undef: UNDEF
+
 true: TRUE
 
 false: FALSE
@@ -66,9 +88,11 @@ prefixed_name: PNAME_LN | PNAME_NS
 # Productions for terminals:
 #
 
-BASE: "BASE"
+UNDEF: "UNDEF"
 
-PREFIX: "PREFIX"
+BASE: /BASE/i
+
+PREFIX: /PREFIX/i
 
 TRUE: "true"
 

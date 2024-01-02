@@ -2,12 +2,15 @@ from sparql.parser import sparql_parser
 from sparql.serializer import SparqlSerializer
 
 query = """
-    BASE <https://example.com/>
-    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    base <https://example.com/>
+    prefix xsd: <http://www.w3.org/2001/XMLSchema#>
     
-    VALUES (?g ?s) {
+    values (?g ?s) {
         (<urn:graph:1> <urn:entity:1>)
         (<urn:graph:2> "some literal"@en)
+        (<urn:graph:2> '''some literal
+        blah
+        '''@en)
         (<urn:graph:3> UNDEF)
         (<urn:graph:4> 123)
         (<urn:graph:5> true)
