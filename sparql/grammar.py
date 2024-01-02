@@ -1,6 +1,6 @@
 grammar = r"""query_unit: query
 
-query: prologue values_clause
+query: prologue ( select_query ) values_clause
 
 prologue: ( base_decl | prefix_decl )*
 
@@ -14,25 +14,196 @@ pname_ns: PNAME_NS
 
 prefix: PREFIX
 
-# select_query: select_clause dataset_clause* where_clause solution_modifier
-# 
-# select_clause: /SELECT/i ( /DISTINCT/i | /REDUCED/i )? ( ( var | ( "(" expression /AS/i var ")" ) )+ | "*" )
-# 
-# expression: conditional_or_expression
-# 
-# conditional_or_expression: conditional_and_expression ( "||" conditional_and_expression )*
-# 
-# conditional_and_expression: value_logical ( "&&" value_logical )*
-# 
-# value_logical: relational_expression
-# 
-# relational_expression: numeric_expression ( "=" numeric_expression | "!=" numeric_expression | "<" numeric_expression | ">" numeric_expression "<=" numeric_expression | ">=" numeric_expression | /IN/i expression_list | /NOT/i /IN/i expression_list )?
-# 
-# numeric_expression: additive_expression
-# 
-# additive_expression: multiplicative_expression ( "+" multiplicative_expression | "-" multiplicative_expression | ( numeric_literal_positive | numeric_literal_negative ) ( ( "*" unary_expression ) | ( "/" unary_expression ) )* )*
-# 
-# expression_list: NIL | "(" expression ( "," expression )* ")"
+# TODO: solution_modifier
+select_query: select_clause dataset_clause* where_clause #solution_modifier
+
+dataset_clause: /FROM/i ( default_graph_clause | named_graph_clause )
+
+default_graph_clause: source_selector
+
+named_graph_clause: /NAMED/i source_selector
+
+source_selector: iri
+
+where_clause: /WHERE/i? group_graph_pattern
+
+# TODO: uncomment
+sub_select: select_clause where_clause #solution_modifier values_clause
+
+select_clause: /SELECT/i ( /DISTINCT/i | /REDUCED/i )? ( select_clause_var_or_expression+ | "*" )
+
+select_clause_var_or_expression: var | select_clause_expression
+
+select_clause_expression: "(" expression /AS/i var ")"
+
+expression: conditional_or_expression
+
+conditional_or_expression: conditional_and_expression ( "||" conditional_and_expression )*
+
+conditional_and_expression: value_logical ( "&&" value_logical )*
+
+value_logical: relational_expression
+
+relational_expression: numeric_expression ( "=" numeric_expression | "!=" numeric_expression | "<" numeric_expression | ">" numeric_expression "<=" numeric_expression | ">=" numeric_expression | /IN/i expression_list | /NOT/i /IN/i expression_list )?
+
+numeric_expression: additive_expression
+
+additive_expression: multiplicative_expression ( "+" multiplicative_expression | "-" multiplicative_expression | ( numeric_literal_positive | numeric_literal_negative ) ( ( "*" unary_expression ) | ( "/" unary_expression ) )* )*
+
+multiplicative_expression: unary_expression ( "*" unary_expression | "/" unary_expression )*
+
+unary_expression: "!" primary_expression
+                  | "+" primary_expression 
+                  | "-" primary_expression
+                  | primary_expression
+
+primary_expression: bracketted_expression | built_in_call | iri_or_function | rdf_literal | numeric_literal | boolean_literal | var
+
+bracketted_expression: "(" expression ")"
+
+built_in_call: aggregate
+               | /STR/i "(" expression ")"
+               | /LANG/i "(" expression ")"
+               | /LANGMATCHES/i "(" expression ")"
+               | /DATATYPE/i "(" expression ")"
+               | /BOUND/i "(" expression ")"
+               | /IRI/i "(" expression ")"
+               | /URI/i "(" expression ")"
+               | /BNODE/i ( "(" expression ")" | NIL )
+               | /RAND/i NIL
+               | /ABS/i "(" expression ")"
+               | /CEIL/i "(" expression ")"
+               | /FLOOR/i "(" expression ")"
+               | /ROUND/i "(" expression ")"
+               | /CONCAT/i expression_list
+               | substring_expression
+               | /STRLEN/i "(" expression ")"
+               | str_replace_expression
+               | /UCASE/i "(" expression ")"
+               | /LCASE/i "(" expression ")"
+               | /ENCODE_FOR_URI/i "(" expression ")"
+               | /CONTAINS/i "(" expression "," expression ")"
+               | /STRSTARTS/i "(" expression "," expression ")"
+               | /STRENDS/i "(" expression "," expression ")"
+               | /STRBEFORE/i "(" expression "," expression ")"
+               | /STRAFTER/i "(" expression "," expression ")"
+               | /YEAR/i "(" expression ")"
+               | /MONTH/i "(" expression ")"
+               | /DAY/i "(" expression ")"
+               | /HOURS/i "(" expression ")"
+               | /MINUTES/i "(" expression ")"
+               | /SECONDS/i "(" expression ")"
+               | /TIMEZONE/i "(" expression ")"
+               | /TZ/i "(" expression ")"
+               | /NOW/i NIL
+               | /UUID/i NIL
+               | /STRUUID/ NIL
+               | /MD5/i "(" expression ")"
+               | /SHA1/i "(" expression ")"
+               | /SHA256/i "(" expression ")"
+               | /SHA384/i "(" expression ")"
+               | /SHA512/i "(" expression ")"
+               | /COALESCE/i expression_list
+               | /IF/i "(" expression "," expression "," expression ")"
+               | /STRLANG/i "(" expression "," expression ")"
+               | /STRDTZ/i "(" expression "," expression ")"
+               | /sameTerm/i "(" expression "," expression ")"
+               | /isIRI/i "(" expression ")"
+               | /isURI/i "(" expression ")"
+               | /isBLANK/i "(" expression ")"
+               | /isLITERAL/i "(" expression ")"
+               | /isNUMERIC/i "(" expression ")"
+               | regex_expression
+               | exists_func
+               | not_exists_func
+
+substring_expression: /SUBSTR/i "(" expression "," expression ( "," expression )? ")"
+
+str_replace_expression: /REPLACE/i "(" expression "," expression "," expression ( "," expression )? ")"
+
+regex_expression: /REGEX/i "(" expression "," expression ( "," expression )? ")"
+
+exists_func: /EXISTS/i group_graph_pattern
+
+not_exists_func: /NOT/i /EXISTS/i group_graph_pattern
+
+group_graph_pattern: "{" ( sub_select | group_graph_pattern_sub ) "}"
+
+group_graph_pattern_sub: triples_block? ( graph_pattern_not_triples "."? triples_block? )*
+
+triples_block: triples_same_subject_path ( "." triples_block? )?
+
+graph_pattern_not_triples: group_or_union_graph_pattern | optional_graph_pattern | minus_graph_pattern | graph_graph_pattern | service_graph_pattern | filter | bind | inline_data
+
+group_or_union_graph_pattern: group_graph_pattern ( /UNION/i group_graph_pattern )*
+
+optional_graph_pattern: /OPTIONAL/i group_graph_pattern
+
+minus_graph_pattern: /MINUS/i group_graph_pattern
+
+graph_graph_pattern: /GRAPH/i var_or_iri group_graph_pattern
+
+service_graph_pattern: /SERVICE/i /SILENT/i? var_or_iri group_graph_pattern
+
+filter: /FILTER/i constraint
+
+constraint: bracketted_expression | built_in_call | function_call
+
+function_call: iri arg_list
+
+bind: /BIND/i "(" expression /AS/i var ")"
+
+inline_data: /VAULES/i data_block
+
+object_list: object ( "," object )*
+
+object: graph_node
+
+triples_same_subject_path: var_or_term property_list_path_not_empty | triples_node_path property_list_path
+
+property_list_path: property_list_path_not_empty?
+
+property_list_path_not_empty: ( verb_path | verb_simple ) object_list_path ( ";" ( ( verb_path | verb_simple ) object_list )? )*
+
+verb_path: path
+
+verb_simple: var
+
+object_list_path: object_path ( "," object_path)*
+
+object_path: graph_node_path
+
+collection: "(" graph_node+ ")"
+
+blank_node_property_list: "[" property_list_not_empty "]"
+
+property_list_not_empty: verb object_list ( ";" ( verb object_list )? )*
+
+verb: var_or_iri | "a"
+
+graph_node: var_or_term | triples_node
+
+triples_node: collection | blank_node_property_list
+
+path: path_alternative
+
+path_alternative: path_sequence ( "|" path_sequence )*
+
+path_sequence: path_elt_or_inverse ( "/" path_elt_or_inverse )*
+
+path_elt_or_inverse: path_elt | "^" path_elt
+
+path_elt: path_primary path_mod?
+
+path_mod: "?" | "*" | "+"
+
+path_primary: iri | "a" | "!" path_negated_property_set | "(" path ")"
+
+path_negated_property_set: path_one_in_property_set | "(" ( path_one_in_property_set ( "|" path_one_in_property_set )* )? ")"
+
+path_one_in_property_set: iri | "a" | "^" ( iri | "a" )
+
+expression_list: NIL | "(" expression ( "," expression )* ")"
 
 values_clause: ( /VALUES/i data_block )?
 
@@ -80,17 +251,51 @@ numeric_literal_positive: INTEGER_POSITIVE | DECIMAL_POSITIVE | DOUBLE_POSITIVE
 
 numeric_literal_negative: INTEGER_NEGATIVE | DECIMAL_NEGATIVE | DOUBLE_NEGATIVE
 
+graph_node_path: var_or_term | triples_node_path
+
+var_or_term: var | graph_term
+
+var_or_iri: var | iri
+
 var: VAR1 | VAR2
 
+graph_term: iri | rdf_literal | numeric_literal | boolean_literal | blank_node | NIL
+
 prefixed_name: PNAME_LN | PNAME_NS
+
+triples_node_path: collection_path | blank_node_property_list_path
+
+collection_path: "(" graph_node_path+ ")"
+
+blank_node_property_list_path: "[" property_list_path_not_empty "]"
+
+aggregate: /COUNT/i LEFT_PARENTHESIS DISTINCT? ( ASTERIX | expression ) RIGHT_PARENTHESIS
+           | /SUM/i "(" /DISTINCT/i? expression ")"
+           | /MIN/i "(" /DISTINCT/i? expression ")"
+           | /MAX/i "(" /DISTINCT/i expression ")"
+           | /AVG/i "(" /DISTINCT/i expression ")"
+           | /SAMPLE/i "(" /DISTINCT/i expression ")"
+           | /GROUP_CONCAT/i "(" /DISTINCT/i? expression ( ";" /SEPARATOR/i "=" string )? ")"
+
+iri_or_function: iri arg_list?
+
+arg_list: NIL | "(" /DISTINCT/i? expression ( "," expression )* ")"
+
+blank_node: BLANK_NODE_LABEL | ANON
 
 #
 # Productions for terminals:
 #
 
+ASTERIX: "*"
+
+DISTINCT: /DISTINCT/i
+
 UNDEF: "UNDEF"
 
 BASE: /BASE/i
+
+BLANK_NODE_LABEL: "_:" ( PN_CHARS_U | /[0-9]/ ) ((PN_CHARS|".")* PN_CHARS)?
 
 PREFIX: /PREFIX/i
 
@@ -177,6 +382,8 @@ PLX: PERCENT | PN_LOCAL_ESC
 NIL: "(" WS* ")"
 
 WS: "\u0020" | "\u0009" | "\u000D" | "\u000A"
+
+ANON: "[" WS* "]"
 
 PERCENT: "%" HEX HEX
 
