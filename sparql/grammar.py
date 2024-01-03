@@ -154,7 +154,8 @@ group_graph_pattern_sub: triples_block? group_graph_pattern_sub_other*
 
 group_graph_pattern_sub_other: graph_pattern_not_triples DOT? triples_block?
 
-triples_block: triples_same_subject_path ( DOT triples_block? )?
+# We don't want to parse the dot token, leave as an inline char instead of a terminal.
+triples_block: triples_same_subject_path ( "." triples_block? )?
 
 graph_pattern_not_triples: group_or_union_graph_pattern | optional_graph_pattern | minus_graph_pattern | graph_graph_pattern | service_graph_pattern | filter | bind | inline_data
 
