@@ -5,12 +5,15 @@ from sparql.serializer import SparqlSerializer
 def test_values_clause_single_var():
     # This also tests that the ignores characters combined with comments work.
     query = """
-        # VALUES ?g {
-        #     <urn:graph:1>
-        #     <urn:graph:2>
-        # }
-    
-        VALUES ?z { "abc" <urn:graph:1> }
+        SELECT *
+        where {
+            # VALUES ?g {
+            #     <urn:graph:1>
+            #     <urn:graph:2>
+            # }
+        
+            VALUES ?z { "abc" <urn:graph:1> }
+        }
     """
 
     tree = sparql_parser.parse(query)
@@ -29,16 +32,19 @@ def test_values_clause_multiple_vars():
         BASE <https://example.com/>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
         
-        VALUES (?g ?s) {
-            (<urn:graph:1> <urn:entity:1>)
-            (<urn:graph:2> "some literal"@en)
-            (<urn:graph:3> UNDEF)
-            (<urn:graph:4> 123)
-            (<urn:graph:5> true)
-            (<urn:graph:6> false)
-            (<urn:graph:7> "special token"^^xsd:token)
-            (<urn:graph:8> '''some multi-line literal
+        select * 
+        where {
+            VALUES (?g ?s) {
+                (<urn:graph:1> <urn:entity:1>)
+                (<urn:graph:2> "some literal"@en)
+                (<urn:graph:3> UNDEF)
+                (<urn:graph:4> 123)
+                (<urn:graph:5> true)
+                (<urn:graph:6> false)
+                (<urn:graph:7> "special token"^^xsd:token)
+                (<urn:graph:8> '''some multi-line literal
 blah'''@en)
+            }
         }
     """
 
@@ -56,14 +62,17 @@ def test_values_clause_lowercase_keywords():
         base <https://example.com/>
         prefix xsd: <http://www.w3.org/2001/XMLSchema#>
         
-        values (?g ?s) {
-            (<urn:graph:1> <urn:entity:1>)
-            (<urn:graph:2> "some literal"@en)
-            (<urn:graph:3> UNDEF)
-            (<urn:graph:4> 123)
-            (<urn:graph:5> true)
-            (<urn:graph:6> false)
-            (<urn:graph:7> "special token"^^xsd:token)
+        select *
+        where {
+            values (?g ?s) {
+                (<urn:graph:1> <urn:entity:1>)
+                (<urn:graph:2> "some literal"@en)
+                (<urn:graph:3> UNDEF)
+                (<urn:graph:4> 123)
+                (<urn:graph:5> true)
+                (<urn:graph:6> false)
+                (<urn:graph:7> "special token"^^xsd:token)
+            }
         }
     """
 

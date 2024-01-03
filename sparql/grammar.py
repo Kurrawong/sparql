@@ -14,8 +14,7 @@ pname_ns: PNAME_NS
 
 prefix: PREFIX
 
-# TODO: solution_modifier
-select_query: select_clause dataset_clause* where_clause #solution_modifier
+select_query: select_clause dataset_clause* where_clause solution_modifier
 
 dataset_clause: /FROM/i ( default_graph_clause | named_graph_clause )
 
@@ -27,14 +26,36 @@ source_selector: iri
 
 where_clause: /WHERE/i? group_graph_pattern
 
-# TODO: uncomment
-sub_select: select_clause where_clause #solution_modifier values_clause
+solution_modifier: group_clause? having_clause? order_clause? limit_offset_clauses?
 
-select_clause: /SELECT/i ( /DISTINCT/i | /REDUCED/i )? ( select_clause_var_or_expression+ | "*" )
+group_clause: /GROUP/i? /BY/i group_condition+
 
-select_clause_var_or_expression: var | select_clause_expression
+group_condition: built_in_call | function_call | group_condition_expression_as_var | var
 
-select_clause_expression: "(" expression /AS/i var ")"
+group_condition_expression_as_var: "(" expression ( /AS/i var )? ")"
+
+having_clause: /HAVING/i having_condition+
+
+having_condition: constraint
+
+order_clause: /ORDER/i /BY/i order_condition
+
+order_condition: ( ( /ASC/i | /DESC/i ) bracketted_expression )
+                 | ( constraint | var )
+
+limit_offset_clauses: limit_clause offset_clause? | offset_clause limit_clause?
+
+limit_clause: /LIMIT/i INTEGER
+
+offset_clause: /OFFSET/i INTEGER
+
+sub_select: select_clause where_clause solution_modifier values_clause
+
+select_clause: /SELECT/i ( /DISTINCT/i | /REDUCED/i )? ( select_clause_var_or_expression+ | ASTERIX )
+
+select_clause_var_or_expression: var | select_clause_expression_as_var
+
+select_clause_expression_as_var: "(" expression /AS/i var ")"
 
 expression: conditional_or_expression
 
@@ -129,9 +150,11 @@ not_exists_func: /NOT/i /EXISTS/i group_graph_pattern
 
 group_graph_pattern: "{" ( sub_select | group_graph_pattern_sub ) "}"
 
-group_graph_pattern_sub: triples_block? ( graph_pattern_not_triples "."? triples_block? )*
+group_graph_pattern_sub: triples_block? group_graph_pattern_sub_other*
 
-triples_block: triples_same_subject_path ( "." triples_block? )?
+group_graph_pattern_sub_other: graph_pattern_not_triples DOT? triples_block?
+
+triples_block: triples_same_subject_path ( DOT triples_block? )?
 
 graph_pattern_not_triples: group_or_union_graph_pattern | optional_graph_pattern | minus_graph_pattern | graph_graph_pattern | service_graph_pattern | filter | bind | inline_data
 
@@ -153,7 +176,7 @@ function_call: iri arg_list
 
 bind: /BIND/i "(" expression /AS/i var ")"
 
-inline_data: /VAULES/i data_block
+inline_data: /VALUES/i data_block
 
 object_list: object ( "," object )*
 
@@ -163,13 +186,19 @@ triples_same_subject_path: var_or_term property_list_path_not_empty | triples_no
 
 property_list_path: property_list_path_not_empty?
 
-property_list_path_not_empty: ( verb_path | verb_simple ) object_list_path ( ";" ( ( verb_path | verb_simple ) object_list )? )*
+property_list_path_not_empty: ( verb_path | verb_simple ) object_list_path property_list_path_not_empty_other*
+
+property_list_path_not_empty_other: ";" property_list_path_not_empty_rest?
+
+property_list_path_not_empty_rest: ( verb_path | verb_simple ) object_list
 
 verb_path: path
 
 verb_simple: var
 
-object_list_path: object_path ( "," object_path)*
+object_list_path: object_path object_list_path_other*
+
+object_list_path_other: "," object_path
 
 object_path: graph_node_path
 
@@ -191,17 +220,17 @@ path_alternative: path_sequence ( "|" path_sequence )*
 
 path_sequence: path_elt_or_inverse ( "/" path_elt_or_inverse )*
 
-path_elt_or_inverse: path_elt | "^" path_elt
+path_elt_or_inverse: path_elt | CARET path_elt
 
 path_elt: path_primary path_mod?
 
 path_mod: "?" | "*" | "+"
 
-path_primary: iri | "a" | "!" path_negated_property_set | "(" path ")"
+path_primary: iri | A | "!" path_negated_property_set | "(" path ")"
 
 path_negated_property_set: path_one_in_property_set | "(" ( path_one_in_property_set ( "|" path_one_in_property_set )* )? ")"
 
-path_one_in_property_set: iri | "a" | "^" ( iri | "a" )
+path_one_in_property_set: iri | A | CARET ( iri | A )
 
 expression_list: NIL | "(" expression ( "," expression )* ")"
 
@@ -286,6 +315,12 @@ blank_node: BLANK_NODE_LABEL | ANON
 #
 # Productions for terminals:
 #
+
+CARET: "^"
+
+DOT: "."
+
+A: "a"
 
 ASTERIX: "*"
 
