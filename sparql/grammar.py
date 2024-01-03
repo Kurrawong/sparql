@@ -253,7 +253,7 @@ left_parenthesis: LEFT_PARENTHESIS
 
 right_parenthesis: RIGHT_PARENTHESIS
 
-string: STRING_LITERAL1 | STRING_LITERAL2 | STRING_LITERAL_LONG1 | STRING_LITERAL_LONG2
+string: STRING_LITERAL1 | STRING_LITERAL2 | STRING_LITERAL_LONG1 | STRING_LITERAL_LONG2 | ESCAPED_STRING
 
 iri: iriref | prefixed_name
 
@@ -427,7 +427,9 @@ HEX: /[0-9]/ | /[A-F]/ | /[a-f]/
 
 PN_LOCAL_ESC: "\\" ( "_" | "~" | "." | "-" | "!" | "$" | "&" | "'" | "(" | ")" | "*" | "+" | "," | ";" | "=" | "/" | "?" | "#" | "@" | "%" )
 
+COMMENT: "#" /[^\n]/*
+
 %ignore /[ \t\n]/+ | COMMENT
 
-COMMENT: "#" /[^\n]/*
+%import common.ESCAPED_STRING
 """

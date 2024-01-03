@@ -140,14 +140,38 @@ class SparqlSerializer(Visitor_Recursive):
                 # An expression
                 self._expression(child)
 
-    def _built_in_call(self, built_in_call: Tree):
-        if len(built_in_call.children) > 1:
-            raise NotImplementedError
+    def _regex_expression(self, regex_expression: Tree):
+        regex_str = regex_expression.children[0].value
+        self._result += regex_str
+        expressions = list(filter(lambda x: isinstance(x, Tree) and x.data == "expression", regex_expression.children))
+        self._result += "("
+        for i, expression in enumerate(expressions):
+            self._expression(expression)
+            if i + 1 != len(expressions):
+                self._result += ", "
 
+        self._result += ") "
+
+    def _built_in_call(self, built_in_call: Tree):
         value = built_in_call.children[0]
-        if isinstance(value, Tree) and value.data == "aggregate":
-            self._aggregate(value)
+        if isinstance(value, Tree):
+            if value.data == "aggregate":
+                self._aggregate(value)
+            elif value.data == "regex_expression":
+                self._regex_expression(value)
+            else:
+                raise ValueError(f"Unexpected built_in_call tree value type: {value.data}")
+        elif isinstance(value, Token):
+            if value.value.lower() == "str":
+                self._result += f"{value.value}"
+                self._result += "("
+                expression = built_in_call.children[1]
+                self._expression(expression)
+                self._result += ")"
+            else:
+                raise ValueError(f"Unexpected built_in_call token value: {value.value}")
         else:
+            # TODO: Add other options.
             raise NotImplementedError
 
     def _primary_expression(self, primary_expression: Tree):
@@ -157,6 +181,8 @@ class SparqlSerializer(Visitor_Recursive):
             self._built_in_call(value)
         elif value.data == "var":
             self._result += get_var(value)
+        elif value.data == "rdf_literal":
+            self._rdf_literal(value)
         else:
             raise NotImplementedError
 
@@ -242,12 +268,24 @@ class SparqlSerializer(Visitor_Recursive):
             if i + 1 != len(select_clause_var_or_expressions):
                 self._result += " "
 
+    def _rdf_literal(self, rdf_literal: Tree):
+        self._result += get_rdf_literal(rdf_literal)
+
+    def _graph_term(self, graph_term: Tree):
+        value = graph_term.children[0]
+        if value.data == "iri":
+            self._iri(value)
+        elif value.data == "rdf_literal":
+            self._rdf_literal(value)
+        else:
+            raise ValueError(f"Unexpected graph_term value type: {graph_term.data}")
+
     def _var_or_term(self, var_or_term: Tree):
         value = var_or_term.children[0]
         if value.data == "var":
             self._result += f"{'\t' * self._indent}{get_var(value)} "
         elif value.data == "graph_term":
-            raise NotImplementedError
+            self._graph_term(value)
         else:
             raise ValueError(f"Unexpected var_or_term value type: {value.data}")
 
@@ -533,6 +571,39 @@ class SparqlSerializer(Visitor_Recursive):
             else:
                 raise ValueError(f"Unexpected group_graph_pattern value type: {type(child)}")
 
+    def _bracketted_expression(self, bracketted_expression: Tree):
+        expression = bracketted_expression.children[0]
+        self._result += "("
+        self._expression(expression)
+        self._result += ")"
+
+    def _arg_list(self, arg_list: Tree):
+        raise NotImplementedError
+
+    def _function_call(self, function_call: Tree):
+        iri = function_call.children[0]
+        arg_list = function_call.children[1]
+        self._iri(iri)
+        self._arg_list(arg_list)
+
+    def _constraint(self, constraint: Tree):
+        value = constraint.children[0]
+        if value.data == "bracketted_expression":
+            self._bracketted_expression(value)
+        elif value.data == "built_in_call":
+            self._built_in_call(value)
+        elif value.data == "function_call":
+            self._function_call(value)
+        else:
+            raise ValueError(f"Unexpected constraint value type: {value.data}")
+
+    def _filter(self, filter_: Tree):
+        filter_str = filter_.children[0]
+        self._result += f"{filter_str} "
+
+        constraint = filter_.children[1]
+        self._constraint(constraint)
+
     def _graph_pattern_not_triples(self, graph_pattern_not_triples: Tree):
         value = graph_pattern_not_triples.children[0]
         if value.data == "group_or_union_graph_pattern":
@@ -546,7 +617,7 @@ class SparqlSerializer(Visitor_Recursive):
         elif value.data == "service_graph_pattern":
             raise NotImplementedError
         elif value.data == "filter":
-            raise NotImplementedError
+            self._filter(value)
         elif value.data == "bind":
             raise NotImplementedError
         elif value.data == "inline_data":
