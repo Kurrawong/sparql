@@ -1,8 +1,4 @@
-from sparql.parser import sparql_parser
-from sparql.serializer import SparqlSerializer
-
-
-def test_values_clause_single_var():
+def test_values_clause_single_var(test_roundtrip):
     # This also tests that the ignores characters combined with comments work.
     query = """
         SELECT *
@@ -15,17 +11,10 @@ def test_values_clause_single_var():
             VALUES ?z { "abc" <urn:graph:1> }
         }
     """
-
-    tree = sparql_parser.parse(query)
-
-    sparql_serializer = SparqlSerializer()
-    sparql_serializer.visit_topdown(tree)
-
-    new_tree = sparql_parser.parse(sparql_serializer.result)
-    assert tree == new_tree, sparql_serializer.result
+    test_roundtrip(query)
 
 
-def test_values_clause_multiple_vars():
+def test_values_clause_multiple_vars(test_roundtrip):
     # Also test base namespace and prefix declaration with different value types.
     # Test multi-line string
     query = """
@@ -47,17 +36,10 @@ blah'''@en)
             }
         }
     """
-
-    tree = sparql_parser.parse(query)
-
-    sparql_serializer = SparqlSerializer()
-    sparql_serializer.visit_topdown(tree)
-
-    new_tree = sparql_parser.parse(sparql_serializer.result)
-    assert tree == new_tree, sparql_serializer.result
+    test_roundtrip(query)
 
 
-def test_values_clause_lowercase_keywords():
+def test_values_clause_lowercase_keywords(test_roundtrip):
     query = """
         base <https://example.com/>
         prefix xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -75,11 +57,4 @@ def test_values_clause_lowercase_keywords():
             }
         }
     """
-
-    tree = sparql_parser.parse(query)
-
-    sparql_serializer = SparqlSerializer()
-    sparql_serializer.visit_topdown(tree)
-
-    new_tree = sparql_parser.parse(sparql_serializer.result)
-    assert tree == new_tree, sparql_serializer.result
+    test_roundtrip(query)

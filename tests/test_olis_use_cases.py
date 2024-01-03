@@ -1,8 +1,4 @@
-from sparql.parser import sparql_parser
-from sparql.serializer import SparqlSerializer
-
-
-def test_query_from():
+def test_query_from(test_roundtrip):
     query = """
             # Test to ensure the FROM keyword works with virtual graph query rewriting.
 
@@ -13,17 +9,10 @@ def test_query_from():
               ?s a ?o .
             }
     """
-
-    tree = sparql_parser.parse(query)
-
-    sparql_serializer = SparqlSerializer()
-    sparql_serializer.visit_topdown(tree)
-
-    new_tree = sparql_parser.parse(sparql_serializer.result)
-    assert tree == new_tree, sparql_serializer.result
+    test_roundtrip(query)
 
 
-def test_query_test_graph():
+def test_query_test_graph(test_roundtrip):
     query = """
         SELECT DISTINCT ?o
         WHERE {
@@ -32,17 +21,10 @@ def test_query_test_graph():
           }
         }
     """
-
-    tree = sparql_parser.parse(query)
-
-    sparql_serializer = SparqlSerializer()
-    sparql_serializer.visit_topdown(tree)
-
-    new_tree = sparql_parser.parse(sparql_serializer.result)
-    assert tree == new_tree, sparql_serializer.result
+    test_roundtrip(query)
 
 
-def test_query_test_graph_union():
+def test_query_test_graph_union(test_roundtrip):
     query = """
         SELECT DISTINCT ?o ?g
         WHERE {
@@ -58,17 +40,10 @@ def test_query_test_graph_union():
           }
         }
     """
-
-    tree = sparql_parser.parse(query)
-
-    sparql_serializer = SparqlSerializer()
-    sparql_serializer.visit_topdown(tree)
-
-    new_tree = sparql_parser.parse(sparql_serializer.result)
-    assert tree == new_tree, sparql_serializer.result
+    test_roundtrip(query)
 
 
-def test_query_test_values():
+def test_query_test_values(test_roundtrip):
     query = """
         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -88,11 +63,4 @@ def test_query_test_values():
           }
         }
     """
-
-    tree = sparql_parser.parse(query)
-
-    sparql_serializer = SparqlSerializer()
-    sparql_serializer.visit_topdown(tree)
-
-    new_tree = sparql_parser.parse(sparql_serializer.result)
-    assert tree == new_tree, sparql_serializer.result
+    test_roundtrip(query)

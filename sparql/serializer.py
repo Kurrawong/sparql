@@ -144,6 +144,9 @@ class SparqlSerializer(Visitor_Recursive):
         regex_str = regex_expression.children[0].value
         self._result += regex_str
         expressions = list(filter(lambda x: isinstance(x, Tree) and x.data == "expression", regex_expression.children))
+        self._expression_list_common(expressions)
+
+    def _expression_list_common(self, expressions: list[Tree]):
         self._result += "("
         for i, expression in enumerate(expressions):
             self._expression(expression)
@@ -151,6 +154,10 @@ class SparqlSerializer(Visitor_Recursive):
                 self._result += ", "
 
         self._result += ") "
+
+    def _expression_list(self, expression_list: Tree):
+        expressions = list(filter(lambda x: isinstance(x, Tree) and x.data == "expression", expression_list.children))
+        self._expression_list_common(expressions)
 
     def _built_in_call(self, built_in_call: Tree):
         value = built_in_call.children[0]
@@ -168,6 +175,10 @@ class SparqlSerializer(Visitor_Recursive):
                 expression = built_in_call.children[1]
                 self._expression(expression)
                 self._result += ")"
+            elif value.value.lower() == "concat":
+                self._result += f"{value.value}"
+                expression_list = built_in_call.children[1]
+                self._expression_list(expression_list)
             else:
                 raise ValueError(f"Unexpected built_in_call token value: {value.value}")
         else:
@@ -271,14 +282,19 @@ class SparqlSerializer(Visitor_Recursive):
     def _rdf_literal(self, rdf_literal: Tree):
         self._result += get_rdf_literal(rdf_literal)
 
+    def _numeric_literal(self, numeric_literal: Tree):
+        self._result += numeric_literal.children[0].children[0].value
+
     def _graph_term(self, graph_term: Tree):
         value = graph_term.children[0]
         if value.data == "iri":
             self._iri(value)
         elif value.data == "rdf_literal":
             self._rdf_literal(value)
+        elif value.data == "numeric_literal":
+            self._numeric_literal(value)
         else:
-            raise ValueError(f"Unexpected graph_term value type: {graph_term.data}")
+            raise ValueError(f"Unexpected graph_term value type: {value.data}")
 
     def _var_or_term(self, var_or_term: Tree):
         value = var_or_term.children[0]
@@ -604,6 +620,16 @@ class SparqlSerializer(Visitor_Recursive):
         constraint = filter_.children[1]
         self._constraint(constraint)
 
+    def _bind(self, bind: Tree):
+        bind_str = bind.children[0].value
+        self._result += f"{bind_str} "
+        self._result += "("
+        expression = bind.children[1]
+        self._expression(expression)
+        as_str = bind.children[2].value
+        var = get_var(bind.children[3])
+        self._result += f" {as_str} {var})\n"
+
     def _graph_pattern_not_triples(self, graph_pattern_not_triples: Tree):
         value = graph_pattern_not_triples.children[0]
         if value.data == "group_or_union_graph_pattern":
@@ -619,7 +645,7 @@ class SparqlSerializer(Visitor_Recursive):
         elif value.data == "filter":
             self._filter(value)
         elif value.data == "bind":
-            raise NotImplementedError
+            self._bind(value)
         elif value.data == "inline_data":
             self._inline_data(value)
         else:
