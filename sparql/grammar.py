@@ -81,7 +81,27 @@ conditional_and_expression: value_logical ( "&&" value_logical )*
 
 value_logical: relational_expression
 
-relational_expression: numeric_expression ( "=" numeric_expression | "!=" numeric_expression | "<" numeric_expression | ">" numeric_expression "<=" numeric_expression | ">=" numeric_expression | /IN/i expression_list | /NOT/i /IN/i expression_list )?
+relational_expression: numeric_expression ( numeric_expression_equals 
+                                            | numeric_expression_lt
+                                            | numeric_expression_gt
+                                            | numeric_expression_lt_or_equal_to
+                                            | numeric_expression_gt_or_equal_to
+                                            | numeric_expression_in_expression_list
+                                            | numeric_expression_not_in_expression_list )?
+
+numeric_expression_equals: "=" numeric_expression
+
+numeric_expression_lt: "<" numeric_expression
+
+numeric_expression_gt: ">" numeric_expression
+
+numeric_expression_lt_or_equal_to: "<=" numeric_expression
+
+numeric_expression_gt_or_equal_to: ">=" numeric_expression
+
+numeric_expression_in_expression_list: /IN/i expression_list
+
+numeric_expression_not_in_expression_list: /NOT/i /IN/i expression_list
 
 numeric_expression: additive_expression
 

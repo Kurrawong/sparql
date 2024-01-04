@@ -1,0 +1,7 @@
+PREFIX : <https://example.com/ns/>
+
+select *
+where {
+  ?x  a  :Class1 .
+  [ a :appClass ] :p "v" .
+}

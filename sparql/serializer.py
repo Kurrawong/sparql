@@ -57,7 +57,7 @@ def get_data_block_value(data_block_value: Tree) -> str:
     elif value.data == "undef":
         return "UNDEF"
     else:
-        raise ValueError(f"Unrecognized data_block_value type: {value.data}")
+        raise ValueError(f"Unexpected data_block_value type: {value.data}")
 
 
 def get_var(var: Tree) -> str:
@@ -269,11 +269,13 @@ class SparqlSerializer(Visitor_Recursive):
         if value.data == "built_in_call":
             self._built_in_call(value)
         elif value.data == "var":
-            self._result += get_var(value)
-        elif value.data == "rdf_literal":
+            self._var(value)
+        elif value.data == "rdf_literal" or value.data == "numeric_literal" or value.data == "boolean_literal":
             self._rdf_literal(value)
+        elif value.data == "var":
+            self._var(value)
         else:
-            raise NotImplementedError
+            raise ValueError(f"Unexpected primary_expression value type: {value.data}")
 
     def _unary_expression(self, unary_expression: Tree):
         if len(unary_expression.children) > 1:
@@ -304,8 +306,33 @@ class SparqlSerializer(Visitor_Recursive):
         numeric_expression = relational_expression.children[0]
         self._numeric_expression(numeric_expression)
 
-        if len(relational_expression.children) > 1:
-            raise NotImplementedError
+        if len(relational_expression.children) == 2:
+            second_value = relational_expression.children[1]
+            if second_value.data == "numeric_expression_equals":
+                self._result += "= "
+                self._numeric_expression(second_value.children[0])
+            elif second_value.data == "numeric_expression_lt":
+                self._result += "< "
+                self._numeric_expression(second_value.children[0])
+            elif second_value.data == "numeric_expression_gt":
+                self._result += "> "
+                self._numeric_expression(second_value.children[0])
+            elif second_value.data == "numeric_expression_lt_or_equal_to":
+                self._result += "<= "
+                self._numeric_expression(second_value.children[0])
+            elif second_value.data == "numeric_expression_gt_or_equal_to":
+                self._result += ">= "
+                self._numeric_expression(second_value.children[0])
+            elif second_value.data == "numeric_expression_in_expression_list":
+                self._result += f"{second_value.children[0].value} "
+                self._numeric_expression(second_value.children[1])
+            elif second_value.data == "numeric_expression_not_in_expression_list":
+                self._result += f"{second_value.children[0].value} {second_value.children[1].value} "
+                self._numeric_expression(second_value.children[2])
+            else:
+                raise ValueError(f"Unexpected relational_expression second value type: {second_value.data}")
+        elif len(relational_expression.children) > 2:
+            raise ValueError(f"Unexpected relational_expression children count: {len(relational_expression.children)}")
 
     def _value_logical(self, value_logical: Tree):
         relational_expression = value_logical.children[0]
@@ -358,10 +385,13 @@ class SparqlSerializer(Visitor_Recursive):
                 self._result += " "
 
     def _rdf_literal(self, rdf_literal: Tree):
-        self._result += get_rdf_literal(rdf_literal)
+        self._result += f"{get_rdf_literal(rdf_literal)} "
 
     def _numeric_literal(self, numeric_literal: Tree):
-        self._result += numeric_literal.children[0].children[0].value
+        self._result += f"{numeric_literal.children[0].children[0].value} "
+
+    def _blank_node(self, blank_node: Tree):
+        self._result += f"{blank_node.children[0].value} "
 
     def _graph_term(self, graph_term: Tree):
         value = graph_term.children[0]
@@ -371,6 +401,10 @@ class SparqlSerializer(Visitor_Recursive):
             self._rdf_literal(value)
         elif value.data == "numeric_literal":
             self._numeric_literal(value)
+        elif value.data == "boolean_literal":
+            raise NotImplementedError
+        elif value.data == "blank_node":
+            self._blank_node(value)
         else:
             raise ValueError(f"Unexpected graph_term value type: {value.data}")
 
@@ -387,12 +421,29 @@ class SparqlSerializer(Visitor_Recursive):
         var = verb_simple.children[0]
         self._var(var)
 
+    def _blank_node_property_list_path(self, blank_node_property_list_path: Tree):
+        property_list_not_empty = blank_node_property_list_path.children[0]
+        self._result += "[\n"
+        self._indent += 1
+        self._property_list_path_not_empty(property_list_not_empty)
+        self._indent -= 1
+        self._result += f"\n{'\t' * self._indent}]\n"
+
+    def _collection_path(self, collection_path: Tree):
+        self._result += "("
+        for child in collection_path.children:
+            if child.data == "graph_node_path":
+                self._graph_node_path(child)
+            else:
+                raise ValueError(f"Unexpected collection_path value type: {child.data}")
+        self._result += ")"
+
     def _triples_node_path(self, triples_node_path: Tree):
         value = triples_node_path.children[0]
         if value.data == "collection_path":
-            raise NotImplementedError
+            self._collection_path(value)
         elif value.data == "blank_node_property_list_path":
-            raise NotImplementedError
+            self._blank_node_property_list_path(value)
         else:
             raise ValueError(f"Unexpected triples_node_path value type: {value.data}")
 
@@ -416,7 +467,7 @@ class SparqlSerializer(Visitor_Recursive):
         object_list_path_others = list(filter(lambda x: x.data == "object_list_path_other", object_list_path.children))
         for object_path_other in object_list_path_others:
             self._result += ", "
-            self._object_path(object_path_other)
+            self._object_path(object_path_other.children[0])
 
     def _path_mod(self, path_mod: Tree):
         symbol = path_mod.children[0].value
@@ -454,7 +505,7 @@ class SparqlSerializer(Visitor_Recursive):
                 self._result += "a"
         elif isinstance(value, Tree):
             if value.data == "iri":
-                self._result += get_iri(value)
+                self._iri(value)
             elif value.data == "path_negated_property_set":
                 self._path_negated_property_set(value)
             elif value.data == "path":
@@ -506,6 +557,7 @@ class SparqlSerializer(Visitor_Recursive):
 
     def _verb_path(self, verb_path: Tree):
         path = verb_path.children[0]
+        self._result += f"{'\t' * self._indent}"
         self._path(path)
 
     def _collection(self, collection: Tree):
@@ -570,9 +622,9 @@ class SparqlSerializer(Visitor_Recursive):
     def _object_list(self, object_list):
         objects = list(filter(lambda x: x.data == "object", object_list.children))
         for i, obj in enumerate(objects):
-            if i != 0 and i + 1 != len(objects):
-                self._result += ", "
             self._object(obj)
+            if i + 1 != len(objects):
+                self._result += ", "
 
     def _property_list_path_not_empty_rest(self, property_list_path_not_empty_rest: Tree):
         first_value = property_list_path_not_empty_rest.children[0]
@@ -610,11 +662,18 @@ class SparqlSerializer(Visitor_Recursive):
             self._property_list_path_not_empty_other(property_list_not_empty_other)
 
     def _property_list_path(self, property_list_path: Tree):
-        raise NotImplementedError
+        if len(property_list_path.children) == 1:
+            self._indent += 1
+            property_list_path_not_empty = property_list_path.children[0]
+            self._property_list_path_not_empty(property_list_path_not_empty)
+            self._indent += 1
 
     def _triples_same_subject_path(self, triples_same_subject_path: Tree):
         first_value = triples_same_subject_path.children[0]
         second_value = triples_same_subject_path.children[1]
+
+        self._result += f"{'\t' * self._indent}"
+
         if first_value.data == "var_or_term":
             self._var_or_term(first_value)
             self._property_list_path_not_empty(second_value)
@@ -712,10 +771,11 @@ class SparqlSerializer(Visitor_Recursive):
 
     def _filter(self, filter_: Tree):
         filter_str = filter_.children[0]
-        self._result += f"{filter_str} "
+        self._result += f"{'\t' * self._indent}{filter_str} "
 
         constraint = filter_.children[1]
         self._constraint(constraint)
+        self._result += "\n"
 
     def _bind(self, bind: Tree):
         bind_str = bind.children[0].value
@@ -788,7 +848,7 @@ class SparqlSerializer(Visitor_Recursive):
         if len(where_clause.children) == 2:
             where_str = where_clause.children[0].value
             group_graph_pattern = where_clause.children[1]
-            self._result += f"{where_str} "
+            self._result += f"\n{where_str} "
         elif len(where_clause.children) == 1:
             group_graph_pattern = where_clause.children[0]
         else:

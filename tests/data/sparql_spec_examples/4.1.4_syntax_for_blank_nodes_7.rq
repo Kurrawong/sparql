@@ -1,0 +1,5 @@
+select *
+where {
+    :x  :q _:b57 .
+    _:b57 :p "v" .
+}

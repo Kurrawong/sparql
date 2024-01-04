@@ -1,0 +1,6 @@
+PREFIX : <https://example.com/ns/>
+
+select *
+where {
+    (1 ?x 3 4) :p "w" .
+}

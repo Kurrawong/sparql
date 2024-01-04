@@ -1,0 +1,4 @@
+select *
+where {
+    [ :p "v" ] :q "w" .
+}

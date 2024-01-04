@@ -1,0 +1,8 @@
+PREFIX : <https://example.com/ns/>
+
+select *
+where {
+  ?x    rdf:type  :Class1 .
+  _:b0  rdf:type  :appClass .
+  _:b0  :p        "v" .
+}

@@ -2,11 +2,13 @@ from sparql.parser import sparql_parser
 from sparql.serializer import SparqlSerializer
 
 query = """
-PREFIX foaf:   <http://xmlns.com/foaf/0.1/>
-PREFIX org:    <http://example.com/ns#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 
-CONSTRUCT { ?x foaf:name ?name }
-WHERE  { ?x org:employeeName ?name }
+select *
+ {  FILTER regex(?name, "Smith")
+    ?x foaf:name ?name .
+    ?x foaf:mbox ?mbox .
+ }
 """
 
 tree = sparql_parser.parse(query)

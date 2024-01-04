@@ -10,4 +10,4 @@ def content_from_data_directory(data_directory: str) -> list[str]:
     for file_path in file_paths:
         with open(file_path, "r", encoding="utf-8") as file:
             content = file.read()
-            yield file_path, content
+            yield str(file_path.resolve()), content
