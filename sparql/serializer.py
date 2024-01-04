@@ -106,6 +106,10 @@ class SparqlSerializer(Visitor_Recursive):
         query_instance = query.children[1]
         if query_instance.data == "select_query":
             self._select_query(query_instance)
+        elif query_instance.data == "construct_query":
+            self._construct_query(query_instance)
+        else:
+            raise ValueError(f"Unexpected query_instance value type: {query_instance.data}")
 
         values_clause = query.children[2]
         self._values_clause(values_clause)
@@ -131,6 +135,80 @@ class SparqlSerializer(Visitor_Recursive):
             raise ValueError(f"Unexpected dataset_clause value: {graph_clause}")
 
         self._result += "\n"
+
+    def _property_list(self, property_list: Tree):
+        if property_list.children:
+            property_list_not_empty = property_list.children[0]
+            self._property_list_not_empty(property_list_not_empty)
+
+    def _triples_same_subject(self, triples_same_subject: Tree):
+        first_value = triples_same_subject.children[0]
+        second_value = triples_same_subject.children[1]
+
+        if first_value.data == "var_or_term":
+            self._var_or_term(first_value)
+            self._property_list_not_empty(second_value)
+        elif first_value.data == "triples_node":
+            self._triples_node(first_value)
+            self._property_list(second_value)
+        else:
+            raise ValueError(f"Unexpected triples_same_subject first_value value type: {first_value.data}")
+
+    def _construct_triples(self, construct_triples: Tree):
+        triples_same_subject = construct_triples.children[0]
+        self._triples_same_subject(triples_same_subject)
+
+        if len(construct_triples.children) == 2:
+            nested_construct_triples = construct_triples.children[1]
+            self._construct_triples(nested_construct_triples)
+
+    def _construct_template(self, construct_template: Tree):
+        if len(construct_template.children) == 1:
+            construct_triples = construct_template.children[0]
+            self._result += " {\n"
+            self._indent += 1
+            self._construct_triples(construct_triples)
+            self._indent -= 1
+            self._result += "\n}"
+
+    def _solution_modifier(self, solution_modifier: Tree):
+        for child in solution_modifier.children:
+            if child.data == "group_clause":
+                raise NotImplementedError
+            elif child.data == "having_clause":
+                raise NotImplementedError
+            elif child.data == "order_clause":
+                raise NotImplementedError
+            elif child.data == "limit_offset_clauses":
+                raise NotImplementedError
+            else:
+                raise ValueError(f"Unexpected solution_modifier value type: {child.data}")
+
+    def _construct_construct_template(self, construct_construct_template: Tree):
+        construct_template = construct_construct_template.children[0]
+        self._construct_template(construct_template)
+
+        dataset_clauses = list(filter(lambda x: x.data == "dataset_clause", construct_construct_template.children))
+        for dataset_clause in dataset_clauses:
+            self._dataset_clause(dataset_clause)
+
+        where_clause = list(filter(lambda x: x.data == "where_clause", construct_construct_template.children))[0]
+        self._where_clause(where_clause)
+
+        solution_modifier = list(filter(lambda x: x.data == "solution_modifier", construct_construct_template.children))[0]
+        self._solution_modifier(solution_modifier)
+
+    def _construct_query(self, construct_query: Tree):
+        construct_str = construct_query.children[0]
+        self._result += f"{construct_str} "
+
+        value = construct_query.children[1]
+        if value.data == "construct_construct_template":
+            self._construct_construct_template(value)
+        elif value.data == "construct_triples_template":
+            raise NotImplementedError
+        else:
+            raise ValueError(f"Unexpected construct_query value type: {value.data}")
 
     def _aggregate(self, aggregate: Tree):
         for child in aggregate.children:
@@ -439,8 +517,27 @@ class SparqlSerializer(Visitor_Recursive):
 
         self._result += ")"
 
+    def _verb(self, verb: Tree):
+        value = verb.children[0]
+        if isinstance(value, Tree):
+            self._var_or_iri(value)
+        elif isinstance(value, Token):
+            self._result += "a "
+        else:
+            raise TypeError(f"Unexpected value type: {type(value)}")
+
+    def _verb_object_list(self, verb_object_list: Tree):
+        verb = verb_object_list.children[0]
+        object_list = verb_object_list.children[1]
+        self._verb(verb)
+        self._object_list(object_list)
+
     def _property_list_not_empty(self, property_list_not_empty: Tree):
-        raise NotImplementedError
+        verb_object_lists = list(filter(lambda x: x.data == "verb_object_list", property_list_not_empty.children))
+        for i, verb_object_list in enumerate(verb_object_lists):
+            self._verb_object_list(verb_object_list)
+            if i + 1 != len(verb_object_lists):
+                self._result += "; "
 
     def _blank_node_property_list(self, blank_node_property_list: Tree):
         self._result += "["

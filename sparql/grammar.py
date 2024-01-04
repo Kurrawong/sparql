@@ -1,6 +1,6 @@
 grammar = r"""query_unit: query
 
-query: prologue ( select_query ) values_clause
+query: prologue ( select_query | construct_query ) values_clause
 
 prologue: ( base_decl | prefix_decl )*
 
@@ -13,6 +13,22 @@ prefix_decl: prefix pname_ns iriref
 pname_ns: PNAME_NS
 
 prefix: PREFIX
+
+construct_query: /CONSTRUCT/i ( construct_construct_template | construct_triples_template )
+
+construct_construct_template: construct_template dataset_clause* where_clause solution_modifier
+
+construct_triples_template: dataset_clause* /WHERE/i "{" triples_template? "}" solution_modifier
+
+construct_template: "{" construct_triples? "}"
+
+construct_triples: triples_same_subject ( "." construct_triples? )?
+
+triples_same_subject: var_or_term property_list_not_empty | triples_node property_list
+
+property_list: property_list_not_empty?
+
+triples_template: triples_same_subject ( "." triples_template? )?
 
 select_query: select_clause dataset_clause* where_clause solution_modifier
 
@@ -207,9 +223,11 @@ collection: "(" graph_node+ ")"
 
 blank_node_property_list: "[" property_list_not_empty "]"
 
-property_list_not_empty: verb object_list ( ";" ( verb object_list )? )*
+property_list_not_empty: verb_object_list ( ";" ( verb_object_list )? )*
 
-verb: var_or_iri | "a"
+verb_object_list: verb object_list
+
+verb: var_or_iri | A
 
 graph_node: var_or_term | triples_node
 
