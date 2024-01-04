@@ -1,0 +1,6 @@
+SELECT DISTINCT ?o
+WHERE {
+    GRAPH <urn:graph:virtual:1> {
+        ?s a ?o .
+    }
+}

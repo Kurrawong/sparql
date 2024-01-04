@@ -1,0 +1,8 @@
+# Test to ensure the FROM keyword works with virtual graph query rewriting.
+
+SELECT DISTINCT ?o
+FROM <urn:graph:virtual:1>
+FROM <urn:graph:virtual:2>
+WHERE {
+    ?s a ?o .
+}

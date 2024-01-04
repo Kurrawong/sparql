@@ -1,0 +1,13 @@
+SELECT DISTINCT ?o ?g
+WHERE {
+    {
+        GRAPH <urn:graph:virtual:1> {
+            ?s a ?o .
+        }
+    }
+    UNION {
+        GRAPH <urn:graph:virtual:2> {
+            ?s a ?o .
+        }
+    }
+}

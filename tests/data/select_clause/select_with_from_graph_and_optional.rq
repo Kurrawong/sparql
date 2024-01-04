@@ -1,0 +1,12 @@
+select distinct ?s (count(?s) as ?count)
+FROM <http://dbpedia.org>
+FROM NAMED <http://dbpedia.org>
+where {
+    ?s ?p ?o .
+    ?o ?pp ?oo ;
+        ?ppp ?ooo .
+    OPTIONAL {
+        ?s a ?o .
+    } .
+    ?o2 ?p2 ?o3 .
+}

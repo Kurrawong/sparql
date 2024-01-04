@@ -1,0 +1,11 @@
+# This also tests that the ignores characters combined with comments work.
+
+SELECT *
+where {
+    # VALUES ?g {
+    #     <urn:graph:1>
+    #     <urn:graph:2>
+    # }
+
+    VALUES ?z { "abc" <urn:graph:1> }
+}

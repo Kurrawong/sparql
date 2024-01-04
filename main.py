@@ -2,21 +2,11 @@ from sparql.parser import sparql_parser
 from sparql.serializer import SparqlSerializer
 
 query = """
-base <https://example.com/>
-prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX foaf:   <http://xmlns.com/foaf/0.1/>
+PREFIX org:    <http://example.com/ns#>
 
-select *
-where {
-    values (?g ?s) {
-        (<urn:graph:1> <urn:entity:1>)
-        (<urn:graph:2> "some literal"@en)
-        (<urn:graph:3> UNDEF)
-        (<urn:graph:4> 123)
-        (<urn:graph:5> true)
-        (<urn:graph:6> false)
-        (<urn:graph:7> "special token"^^xsd:token)
-    }
-}
+CONSTRUCT { ?x foaf:name ?name }
+WHERE  { ?x org:employeeName ?name }
 """
 
 tree = sparql_parser.parse(query)

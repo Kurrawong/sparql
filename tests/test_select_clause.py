@@ -1,16 +1,8 @@
-def test(test_roundtrip):
-    query = """
-        select distinct ?s (count(?s) as ?count)
-        FROM <http://dbpedia.org>
-        FROM NAMED <http://dbpedia.org>
-        where {
-            ?s ?p ?o .
-            ?o ?pp ?oo ;
-                ?ppp ?ooo .
-            OPTIONAL {
-                ?s a ?o .
-            } .
-            ?o2 ?p2 ?o3 .
-        }
-    """
+import pytest
+
+from tests import content_from_data_directory
+
+
+@pytest.mark.parametrize("file, query", [*content_from_data_directory("select_clause")])
+def test(file: str, query: str, test_roundtrip):
     test_roundtrip(query)

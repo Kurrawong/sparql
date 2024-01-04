@@ -1,0 +1,17 @@
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX schema: <https://schema.org/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX addr: <https://w3id.org/profile/anz-address/>
+
+SELECT distinct ?g ?s ?class
+WHERE {
+    VALUES (?g ?class) {
+        (<urn:graph:virtual:1> skos:Concept)
+        (<urn:graph:virtual:2> addr:Address)
+    }
+
+    GRAPH ?g {
+        ?s a ?class .
+    }
+}
