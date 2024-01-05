@@ -28,7 +28,7 @@ triples_same_subject: var_or_term property_list_not_empty | triples_node propert
 
 property_list: property_list_not_empty?
 
-triples_template: triples_same_subject ( "." triples_template? )?
+triples_template: triples_same_subject ( DOT triples_template? )?
 
 select_query: select_clause dataset_clause* where_clause solution_modifier
 
@@ -352,13 +352,15 @@ aggregate: /COUNT/i LEFT_PARENTHESIS DISTINCT? ( ASTERIX | expression ) RIGHT_PA
 
 iri_or_function: iri arg_list?
 
-arg_list: NIL | "(" /DISTINCT/i? expression ( "," expression )* ")"
+arg_list: NIL | LEFT_PARENTHESIS /DISTINCT/i? expression ( COMMA expression )* RIGHT_PARENTHESIS
 
 blank_node: BLANK_NODE_LABEL | ANON
 
 #
 # Productions for terminals:
 #
+
+COMMA: ","
 
 PIPE: "|"
 

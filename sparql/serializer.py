@@ -295,6 +295,40 @@ class SparqlSerializer(Visitor_Recursive):
         solution_modifier = list(filter(lambda x: x.data == "solution_modifier", construct_construct_template.children))[0]
         self._solution_modifier(solution_modifier)
 
+    def _triples_template(self, triples_template):
+        for child in triples_template.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "triples_same_subject":
+                    self._triples_same_subject(child)
+                elif child.data == "triples_template":
+                    self._triples_template(child)
+                else:
+                    raise ValueError(f"Unexpected triples_template value type: {child.data}")
+            else:
+                raise TypeError(f"Unexpected triples_template value type: {type(child)}")
+
+    def _construct_triples_template(self, construct_triples_template: Tree):
+        for child in construct_triples_template.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "dataset_clause":
+                    self._dataset_clause(child)
+                elif child.data == "triples_template":
+                    self._result += "{\n"
+                    self._indent += 1
+                    self._triples_template(child)
+                    self._indent -= 1
+                    self._result += f"{'\t' * self._indent}\n}}"
+                elif child.data == "solution_modifier":
+                    self._solution_modifier(child)
+                else:
+                    raise ValueError(f"Unexpected construct_triples_template value type: {child.data}")
+            else:
+                raise TypeError(f"Unexpected construct_triples_template value type: {type(child)}")
+
     def _construct_query(self, construct_query: Tree):
         construct_str = construct_query.children[0]
         self._result += f"{construct_str} "
@@ -303,7 +337,7 @@ class SparqlSerializer(Visitor_Recursive):
         if value.data == "construct_construct_template":
             self._construct_construct_template(value)
         elif value.data == "construct_triples_template":
-            raise NotImplementedError
+            self._construct_triples_template(value)
         else:
             raise ValueError(f"Unexpected construct_query value type: {value.data}")
 
@@ -865,7 +899,6 @@ class SparqlSerializer(Visitor_Recursive):
             raise ValueError(f"Unexpected var_or_iri value type: {value.data}")
 
     def _graph_graph_pattern(self, graph_graph_pattern: Tree):
-        self._indent += 1
         graph_str = graph_graph_pattern.children[0]
         self._result += f"{'\t' * self._indent}{graph_str} "
 
@@ -874,7 +907,6 @@ class SparqlSerializer(Visitor_Recursive):
 
         group_graph_pattern = graph_graph_pattern.children[2]
         self._group_graph_pattern(group_graph_pattern)
-        self._indent -= 1
 
     def _group_or_union_graph_pattern(self, group_or_union_graph_pattern: Tree):
         for child in group_or_union_graph_pattern.children:
@@ -895,7 +927,16 @@ class SparqlSerializer(Visitor_Recursive):
         self._result += ")"
 
     def _arg_list(self, arg_list: Tree):
-        raise NotImplementedError
+        for child in arg_list.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "expression":
+                    self._expression(child)
+                else:
+                    raise ValueError(f"Unexpected arg_list value type: {child.data}")
+            else:
+                raise TypeError(f"Unexpected arg_list value type: {type(child)}")
 
     def _function_call(self, function_call: Tree):
         iri = function_call.children[0]
