@@ -2,13 +2,11 @@ from sparql.parser import sparql_parser
 from sparql.serializer import SparqlSerializer
 
 query = """
-PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
 select *
- {  FILTER regex(?name, "Smith")
-    ?x foaf:name ?name .
-    ?x foaf:mbox ?mbox .
- }
+where
+{ ?x !(rdf:type|^rdf:type) ?y }
 """
 
 tree = sparql_parser.parse(query)

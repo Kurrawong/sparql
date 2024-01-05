@@ -1,0 +1,5 @@
+PREFIX ex: <https://example.com/ns>
+
+select *
+where
+{ ?ancestor (ex:motherOf|ex:fatherOf)+ <#me> }

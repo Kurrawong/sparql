@@ -237,6 +237,19 @@ class SparqlSerializer(Visitor_Recursive):
         expressions = list(filter(lambda x: isinstance(x, Tree) and x.data == "expression", expression_list.children))
         self._expression_list_common(expressions)
 
+    def _exists_func(self, exists_func: Tree):
+        exists_str = exists_func.children[0].value
+        self._result += f"{'\t' * self._indent}{exists_str}"
+        group_graph_pattern = exists_func.children[1]
+        self._group_graph_pattern(group_graph_pattern)
+
+    def _not_exists_func(self, not_exists_func: Tree):
+        not_str = not_exists_func.children[0].value
+        exists_str = not_exists_func.children[1].value
+        self._result += f"{'\t' * self._indent}{not_str} {exists_str}"
+        group_graph_pattern = not_exists_func.children[2]
+        self._group_graph_pattern(group_graph_pattern)
+
     def _built_in_call(self, built_in_call: Tree):
         value = built_in_call.children[0]
         if isinstance(value, Tree):
@@ -244,6 +257,10 @@ class SparqlSerializer(Visitor_Recursive):
                 self._aggregate(value)
             elif value.data == "regex_expression":
                 self._regex_expression(value)
+            elif value.data == "exists_func":
+                self._exists_func(value)
+            elif value.data == "not_exists_func":
+                self._not_exists_func(value)
             else:
                 raise ValueError(f"Unexpected built_in_call tree value type: {value.data}")
         elif isinstance(value, Token):
@@ -310,6 +327,9 @@ class SparqlSerializer(Visitor_Recursive):
             second_value = relational_expression.children[1]
             if second_value.data == "numeric_expression_equals":
                 self._result += "= "
+                self._numeric_expression(second_value.children[0])
+            elif second_value.data == "numeric_expression_not_equals":
+                self._result += "!= "
                 self._numeric_expression(second_value.children[0])
             elif second_value.data == "numeric_expression_lt":
                 self._result += "< "
@@ -492,9 +512,9 @@ class SparqlSerializer(Visitor_Recursive):
         else:
             self._result += "("
             for i, path_one_in_property in enumerate(path_one_in_property_sets):
+                self._path_one_in_property_set(path_one_in_property)
                 if i + 1 != len(path_one_in_property_sets):
                     self._result += "|"
-                self._path_one_in_property_set(path_one_in_property)
 
             self._result += ")"
 
@@ -507,6 +527,7 @@ class SparqlSerializer(Visitor_Recursive):
             if value.data == "iri":
                 self._iri(value)
             elif value.data == "path_negated_property_set":
+                self._result += "!"
                 self._path_negated_property_set(value)
             elif value.data == "path":
                 self._result += "("
@@ -540,16 +561,16 @@ class SparqlSerializer(Visitor_Recursive):
     def _path_sequence(self, path_sequence: Tree):
         path_elt_or_inverses = list(filter(lambda x: x.data == "path_elt_or_inverse", path_sequence.children))
         for i, path_elt_or_inverse_elt in enumerate(path_elt_or_inverses):
-            if i != 0 and i + 1 != len(path_elt_or_inverses):
-                self._result += "/"
             self._path_elt_or_inverse(path_elt_or_inverse_elt)
+            if i + 1 != len(path_elt_or_inverses):
+                self._result += "/"
 
     def _path_alternative(self, path_alternative: Tree):
         path_sequences = list(filter(lambda x: x.data == "path_sequence", path_alternative.children))
         for i, path_sequence in enumerate(path_sequences):
-            if i != 0 and i + 1 != len(path_sequences):
-                self._result += "|"
             self._path_sequence(path_sequence)
+            if i + 1 != len(path_sequences):
+                self._result += "|"
 
     def _path(self, path: Tree):
         path_alternative = path.children[0]
@@ -672,8 +693,6 @@ class SparqlSerializer(Visitor_Recursive):
         first_value = triples_same_subject_path.children[0]
         second_value = triples_same_subject_path.children[1]
 
-        self._result += f"{'\t' * self._indent}"
-
         if first_value.data == "var_or_term":
             self._var_or_term(first_value)
             self._property_list_path_not_empty(second_value)
@@ -694,7 +713,7 @@ class SparqlSerializer(Visitor_Recursive):
 
     def _optional_graph_pattern(self, optional_graph_pattern: Tree):
         optional_str = optional_graph_pattern.children[0].value
-        self._result += f"{optional_str} "
+        self._result += f"{'\t' * self._indent}{optional_str} "
 
         group_graph_pattern = optional_graph_pattern.children[1]
         self._group_graph_pattern(group_graph_pattern)
@@ -722,19 +741,21 @@ class SparqlSerializer(Visitor_Recursive):
             raise ValueError(f"Unexpected var_or_iri value type: {value.data}")
 
     def _graph_graph_pattern(self, graph_graph_pattern: Tree):
+        self._indent += 1
         graph_str = graph_graph_pattern.children[0]
-        self._result += f"{graph_str} "
+        self._result += f"{'\t' * self._indent}{graph_str} "
 
         var_or_iri = graph_graph_pattern.children[1]
         self._var_or_iri(var_or_iri)
 
         group_graph_pattern = graph_graph_pattern.children[2]
         self._group_graph_pattern(group_graph_pattern)
+        self._indent -= 1
 
     def _group_or_union_graph_pattern(self, group_or_union_graph_pattern: Tree):
         for child in group_or_union_graph_pattern.children:
             if isinstance(child, Token):
-                self._result += f"{child.value} "
+                self._result += f"{'\t' * self._indent}{child.value} "
             elif isinstance(child, Tree):
                 if child.data == "group_graph_pattern":
                     self._group_graph_pattern(child)
@@ -787,6 +808,29 @@ class SparqlSerializer(Visitor_Recursive):
         var = get_var(bind.children[3])
         self._result += f" {as_str} {var})\n"
 
+    def _minus_graph_pattern(self, minus_graph_pattern: Tree):
+        minus_str = minus_graph_pattern.children[0].value
+        self._result += f"{'\t' * self._indent}{minus_str} "
+        group_graph_pattern = minus_graph_pattern.children[1]
+        self._group_graph_pattern(group_graph_pattern)
+
+    def _service_graph_pattern(self, service_graph_pattern: Tree):
+        for child in service_graph_pattern.children:
+            if isinstance(child, Token):
+                if child.value.lower() == "service":
+                    self._result += f"{'\t' * self._indent}{child.value} "
+                else:
+                    self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "var_or_iri":
+                    self._var_or_iri(child)
+                elif child.data == "group_graph_pattern":
+                    self._group_graph_pattern(child)
+                else:
+                    raise ValueError(f"Unexpected service_graph_pattern value type: {child.data}")
+            else:
+                raise ValueError(f"Unexpected service_graph_pattern value type: {type(child)}")
+
     def _graph_pattern_not_triples(self, graph_pattern_not_triples: Tree):
         value = graph_pattern_not_triples.children[0]
         if value.data == "group_or_union_graph_pattern":
@@ -794,11 +838,11 @@ class SparqlSerializer(Visitor_Recursive):
         elif value.data == "optional_graph_pattern":
             self._optional_graph_pattern(value)
         elif value.data == "minus_graph_pattern":
-            raise NotImplementedError
+            self._minus_graph_pattern(value)
         elif value.data == "graph_graph_pattern":
             self._graph_graph_pattern(value)
         elif value.data == "service_graph_pattern":
-            raise NotImplementedError
+            self._service_graph_pattern(value)
         elif value.data == "filter":
             self._filter(value)
         elif value.data == "bind":
@@ -818,7 +862,7 @@ class SparqlSerializer(Visitor_Recursive):
                     self._triples_block(child)
             elif isinstance(child, Token):
                 if child.type == "DOT":
-                    self._result += " .\n"
+                    self._result += f"{'\t' * self._indent}.\n"
             else:
                 raise TypeError(f"Unexpected child type: {type(child)}")
 
@@ -832,7 +876,8 @@ class SparqlSerializer(Visitor_Recursive):
                 raise ValueError(f"Unexpected group_graph_pattern_sub_other value type: {child.data}")
 
     def _group_graph_pattern(self, group_graph_pattern: Tree):
-        self._result += "{\n"
+        self._indent += 1
+        self._result += f"{'\t' * (self._indent - 1)}{{\n"
 
         value = group_graph_pattern.children[0]
         if value.data == "sub_select":
@@ -842,21 +887,20 @@ class SparqlSerializer(Visitor_Recursive):
         else:
             raise ValueError(f"Unexpected group_graph_pattern value type: {value.data}")
 
-        self._result += "\n}\n"
+        self._result += f"\n{'\t' * (self._indent - 1)}}}\n"
+        self._indent -= 1
 
     def _where_clause(self, where_clause: Tree):
         if len(where_clause.children) == 2:
             where_str = where_clause.children[0].value
             group_graph_pattern = where_clause.children[1]
-            self._result += f"\n{where_str} "
+            self._result += f"\n{'\t' * self._indent}{where_str} "
         elif len(where_clause.children) == 1:
             group_graph_pattern = where_clause.children[0]
         else:
             raise ValueError(f"Unexpected where_clause children count: {len(where_clause.children)}")
 
-        self._indent += 1
         self._group_graph_pattern(group_graph_pattern)
-        self._indent -= 1
 
     def _select_query(self, select_query: Tree):
         select_clause = select_query.children[0]

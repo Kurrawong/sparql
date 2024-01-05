@@ -81,7 +81,8 @@ conditional_and_expression: value_logical ( "&&" value_logical )*
 
 value_logical: relational_expression
 
-relational_expression: numeric_expression ( numeric_expression_equals 
+relational_expression: numeric_expression ( numeric_expression_equals
+                                            | numeric_expression_not_equals
                                             | numeric_expression_lt
                                             | numeric_expression_gt
                                             | numeric_expression_lt_or_equal_to
@@ -90,6 +91,8 @@ relational_expression: numeric_expression ( numeric_expression_equals
                                             | numeric_expression_not_in_expression_list )?
 
 numeric_expression_equals: "=" numeric_expression
+
+numeric_expression_not_equals: "!=" numeric_expression
 
 numeric_expression_lt: "<" numeric_expression
 
@@ -263,7 +266,9 @@ path_elt_or_inverse: path_elt | CARET path_elt
 
 path_elt: path_primary path_mod?
 
-path_mod: "?" | "*" | "+"
+path_mod: PATH_MOD
+
+PATH_MOD: "?" | "*" | "+"
 
 path_primary: iri | A | "!" path_negated_property_set | "(" path ")"
 
