@@ -1,0 +1,9 @@
+PREFIX : <https://example.com/ns>
+
+select *
+where {
+    VALUES (?x ?y) {
+      (:uri1 1)
+      (:uri2 UNDEF)
+    }
+}

@@ -48,13 +48,13 @@ group_clause: /GROUP/i? /BY/i group_condition+
 
 group_condition: built_in_call | function_call | group_condition_expression_as_var | var
 
-group_condition_expression_as_var: "(" expression ( /AS/i var )? ")"
+group_condition_expression_as_var: LEFT_PARENTHESIS expression ( /AS/i var )? RIGHT_PARENTHESIS
 
 having_clause: /HAVING/i having_condition+
 
 having_condition: constraint
 
-order_clause: /ORDER/i /BY/i order_condition
+order_clause: /ORDER/i /BY/i order_condition+
 
 order_condition: ( ( /ASC/i | /DESC/i ) bracketted_expression )
                  | ( constraint | var )
@@ -108,9 +108,9 @@ numeric_expression_not_in_expression_list: /NOT/i /IN/i expression_list
 
 numeric_expression: additive_expression
 
-additive_expression: multiplicative_expression ( "+" multiplicative_expression | "-" multiplicative_expression | ( numeric_literal_positive | numeric_literal_negative ) ( ( "*" unary_expression ) | ( "/" unary_expression ) )* )*
+additive_expression: multiplicative_expression ( PLUS multiplicative_expression | MINUS multiplicative_expression | ( numeric_literal_positive | numeric_literal_negative ) ( ( ASTERIX unary_expression ) | ( FORWARD_SLASH unary_expression ) )* )*
 
-multiplicative_expression: unary_expression ( "*" unary_expression | "/" unary_expression )*
+multiplicative_expression: unary_expression ( ASTERIX unary_expression | FORWARD_SLASH unary_expression )*
 
 unary_expression: "!" primary_expression
                   | "+" primary_expression 
@@ -272,7 +272,7 @@ PATH_MOD: "?" | "*" | "+"
 
 path_primary: iri | A | "!" path_negated_property_set | "(" path ")"
 
-path_negated_property_set: path_one_in_property_set | "(" ( path_one_in_property_set ( "|" path_one_in_property_set )* )? ")"
+path_negated_property_set: path_one_in_property_set | LEFT_PARENTHESIS ( path_one_in_property_set ( PIPE path_one_in_property_set )* )? RIGHT_PARENTHESIS
 
 path_one_in_property_set: iri | A | CARET ( iri | A )
 
@@ -343,12 +343,12 @@ collection_path: "(" graph_node_path+ ")"
 blank_node_property_list_path: "[" property_list_path_not_empty "]"
 
 aggregate: /COUNT/i LEFT_PARENTHESIS DISTINCT? ( ASTERIX | expression ) RIGHT_PARENTHESIS
-           | /SUM/i "(" /DISTINCT/i? expression ")"
-           | /MIN/i "(" /DISTINCT/i? expression ")"
-           | /MAX/i "(" /DISTINCT/i expression ")"
-           | /AVG/i "(" /DISTINCT/i expression ")"
-           | /SAMPLE/i "(" /DISTINCT/i expression ")"
-           | /GROUP_CONCAT/i "(" /DISTINCT/i? expression ( ";" /SEPARATOR/i "=" string )? ")"
+           | /SUM/i LEFT_PARENTHESIS /DISTINCT/i? expression RIGHT_PARENTHESIS
+           | /MIN/i LEFT_PARENTHESIS /DISTINCT/i? expression RIGHT_PARENTHESIS
+           | /MAX/i LEFT_PARENTHESIS /DISTINCT/i? expression RIGHT_PARENTHESIS
+           | /AVG/i LEFT_PARENTHESIS /DISTINCT/i? expression RIGHT_PARENTHESIS
+           | /SAMPLE/i LEFT_PARENTHESIS /DISTINCT/i? expression RIGHT_PARENTHESIS
+           | /GROUP_CONCAT/i LEFT_PARENTHESIS /DISTINCT/i? expression ( SEMICOLON /SEPARATOR/i EQUALS string )? RIGHT_PARENTHESIS
 
 iri_or_function: iri arg_list?
 
@@ -359,6 +359,18 @@ blank_node: BLANK_NODE_LABEL | ANON
 #
 # Productions for terminals:
 #
+
+PIPE: "|"
+
+PLUS: "+"
+
+MINUS: "-"
+
+FORWARD_SLASH: "/"
+
+SEMICOLON: ";"
+
+EQUALS: "="
 
 CARET: "^"
 
