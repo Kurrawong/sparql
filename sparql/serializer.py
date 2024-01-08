@@ -1,4 +1,4 @@
-from lark import Tree, Token
+from lark import Token, Tree
 from lark.visitors import Visitor_Recursive
 
 
@@ -52,7 +52,11 @@ def get_data_block_value(data_block_value: Tree) -> str:
 
     if value.data == "iri":
         return get_iri(value)
-    elif value.data == "rdf_literal" or value.data == "numeric_literal" or value.data == "boolean_literal":
+    elif (
+        value.data == "rdf_literal"
+        or value.data == "numeric_literal"
+        or value.data == "boolean_literal"
+    ):
         return get_rdf_literal(value)
     elif value.data == "undef":
         return "UNDEF"
@@ -86,7 +90,9 @@ class SparqlSerializer(Visitor_Recursive):
 
     def _prologue(self, prologue: Tree):
         base_decls = list(filter(lambda x: x.data == "base_decl", prologue.children))
-        prefix_decls = list(filter(lambda x: x.data == "prefix_decl", prologue.children))
+        prefix_decls = list(
+            filter(lambda x: x.data == "prefix_decl", prologue.children)
+        )
 
         for base_decl in base_decls:
             self._result += f"{base_decl.children[0].children[0].value} {get_iriref(base_decl.children[1])}\n"
@@ -129,7 +135,9 @@ class SparqlSerializer(Visitor_Recursive):
                 elif child.data == "solution_modifier":
                     self._solution_modifier(child)
                 else:
-                    raise ValueError(f"Unexpected describe_query value type: {child.data}")
+                    raise ValueError(
+                        f"Unexpected describe_query value type: {child.data}"
+                    )
             else:
                 raise TypeError(f"Unexpected describe_query value type: {type(child)}")
 
@@ -147,7 +155,9 @@ class SparqlSerializer(Visitor_Recursive):
         elif query_instance.data == "ask_query":
             self._ask_query(query_instance)
         else:
-            raise ValueError(f"Unexpected query_instance value type: {query_instance.data}")
+            raise ValueError(
+                f"Unexpected query_instance value type: {query_instance.data}"
+            )
 
         values_clause = query.children[2]
         self._values_clause(values_clause)
@@ -191,7 +201,9 @@ class SparqlSerializer(Visitor_Recursive):
             self._triples_node(first_value)
             self._property_list(second_value)
         else:
-            raise ValueError(f"Unexpected triples_same_subject first_value value type: {first_value.data}")
+            raise ValueError(
+                f"Unexpected triples_same_subject first_value value type: {first_value.data}"
+            )
 
     def _construct_triples(self, construct_triples: Tree):
         triples_same_subject = construct_triples.children[0]
@@ -211,7 +223,9 @@ class SparqlSerializer(Visitor_Recursive):
             self._indent -= 1
             self._result += "\n}"
 
-    def _group_condition_expression_as_var(self, group_condition_expression_as_var: Tree):
+    def _group_condition_expression_as_var(
+        self, group_condition_expression_as_var: Tree
+    ):
         for child in group_condition_expression_as_var.children:
             if isinstance(child, Token):
                 self._result += f"{child.value}"
@@ -221,9 +235,13 @@ class SparqlSerializer(Visitor_Recursive):
                 elif child.data == "var":
                     self._var(child)
                 else:
-                    raise ValueError(f"Unexpected group_condition_expression_as_var value type: {child.data}")
+                    raise ValueError(
+                        f"Unexpected group_condition_expression_as_var value type: {child.data}"
+                    )
             else:
-                raise TypeError(f"Unexpected group_condition_expression_as_var value type: {type(child)}")
+                raise TypeError(
+                    f"Unexpected group_condition_expression_as_var value type: {type(child)}"
+                )
 
     def _group_condition(self, group_condition: Tree):
         value = group_condition.children[0]
@@ -243,7 +261,12 @@ class SparqlSerializer(Visitor_Recursive):
         by_str = group_clause.children[1]
         self._result += f"{'\t' * self._indent}{group_str} {by_str} "
 
-        group_conditions = list(filter(lambda x: isinstance(x, Tree) and x.data == "group_condition", group_clause.children))
+        group_conditions = list(
+            filter(
+                lambda x: isinstance(x, Tree) and x.data == "group_condition",
+                group_clause.children,
+            )
+        )
         for group_condition in group_conditions:
             self._group_condition(group_condition)
 
@@ -255,7 +278,12 @@ class SparqlSerializer(Visitor_Recursive):
         having_str = having.children[0]
         self._result += f"\n{'\t' * self._indent}{having_str}"
 
-        having_conditions = list(filter(lambda x: isinstance(x, Tree) and x.data == "having_condition", having.children))
+        having_conditions = list(
+            filter(
+                lambda x: isinstance(x, Tree) and x.data == "having_condition",
+                having.children,
+            )
+        )
         for having_condition in having_conditions:
             self._having_condition(having_condition)
 
@@ -271,7 +299,9 @@ class SparqlSerializer(Visitor_Recursive):
                 elif child.data == "var":
                     self._var(child)
                 else:
-                    raise ValueError(f"Unexpected order_condition value type: {child.data}")
+                    raise ValueError(
+                        f"Unexpected order_condition value type: {child.data}"
+                    )
             else:
                 raise TypeError(f"Unexpected order_condition value type: {type(child)}")
 
@@ -280,7 +310,12 @@ class SparqlSerializer(Visitor_Recursive):
         by_str = order_clause.children[1].value
         self._result += f"\n{'\t' * self._indent}{order_str} {by_str} "
 
-        order_conditions = list(filter(lambda x: isinstance(x, Tree) and x.data == "order_condition", order_clause.children))
+        order_conditions = list(
+            filter(
+                lambda x: isinstance(x, Tree) and x.data == "order_condition",
+                order_clause.children,
+            )
+        )
         for order_condition in order_conditions:
             self._order_condition(order_condition)
 
@@ -302,9 +337,13 @@ class SparqlSerializer(Visitor_Recursive):
                 elif child.data == "offset_clause":
                     self._offset_clause(child)
                 else:
-                    raise ValueError(f"Unexpected limit_offset_clause value type: {child.data}")
+                    raise ValueError(
+                        f"Unexpected limit_offset_clause value type: {child.data}"
+                    )
             else:
-                raise TypeError(f"Unexpected limit_offset_clause value type: {type(child)}")
+                raise TypeError(
+                    f"Unexpected limit_offset_clause value type: {type(child)}"
+                )
 
     def _solution_modifier(self, solution_modifier: Tree):
         for child in solution_modifier.children:
@@ -317,20 +356,37 @@ class SparqlSerializer(Visitor_Recursive):
             elif child.data == "limit_offset_clauses":
                 self._limit_offset_clauses(child)
             else:
-                raise ValueError(f"Unexpected solution_modifier value type: {child.data}")
+                raise ValueError(
+                    f"Unexpected solution_modifier value type: {child.data}"
+                )
 
     def _construct_construct_template(self, construct_construct_template: Tree):
         construct_template = construct_construct_template.children[0]
         self._construct_template(construct_template)
 
-        dataset_clauses = list(filter(lambda x: x.data == "dataset_clause", construct_construct_template.children))
+        dataset_clauses = list(
+            filter(
+                lambda x: x.data == "dataset_clause",
+                construct_construct_template.children,
+            )
+        )
         for dataset_clause in dataset_clauses:
             self._dataset_clause(dataset_clause)
 
-        where_clause = list(filter(lambda x: x.data == "where_clause", construct_construct_template.children))[0]
+        where_clause = list(
+            filter(
+                lambda x: x.data == "where_clause",
+                construct_construct_template.children,
+            )
+        )[0]
         self._where_clause(where_clause)
 
-        solution_modifier = list(filter(lambda x: x.data == "solution_modifier", construct_construct_template.children))[0]
+        solution_modifier = list(
+            filter(
+                lambda x: x.data == "solution_modifier",
+                construct_construct_template.children,
+            )
+        )[0]
         self._solution_modifier(solution_modifier)
 
     def _triples_template(self, triples_template):
@@ -343,9 +399,13 @@ class SparqlSerializer(Visitor_Recursive):
                 elif child.data == "triples_template":
                     self._triples_template(child)
                 else:
-                    raise ValueError(f"Unexpected triples_template value type: {child.data}")
+                    raise ValueError(
+                        f"Unexpected triples_template value type: {child.data}"
+                    )
             else:
-                raise TypeError(f"Unexpected triples_template value type: {type(child)}")
+                raise TypeError(
+                    f"Unexpected triples_template value type: {type(child)}"
+                )
 
     def _construct_triples_template(self, construct_triples_template: Tree):
         for child in construct_triples_template.children:
@@ -363,9 +423,13 @@ class SparqlSerializer(Visitor_Recursive):
                 elif child.data == "solution_modifier":
                     self._solution_modifier(child)
                 else:
-                    raise ValueError(f"Unexpected construct_triples_template value type: {child.data}")
+                    raise ValueError(
+                        f"Unexpected construct_triples_template value type: {child.data}"
+                    )
             else:
-                raise TypeError(f"Unexpected construct_triples_template value type: {type(child)}")
+                raise TypeError(
+                    f"Unexpected construct_triples_template value type: {type(child)}"
+                )
 
     def _construct_query(self, construct_query: Tree):
         construct_str = construct_query.children[0]
@@ -390,7 +454,12 @@ class SparqlSerializer(Visitor_Recursive):
     def _regex_expression(self, regex_expression: Tree):
         regex_str = regex_expression.children[0].value
         self._result += regex_str
-        expressions = list(filter(lambda x: isinstance(x, Tree) and x.data == "expression", regex_expression.children))
+        expressions = list(
+            filter(
+                lambda x: isinstance(x, Tree) and x.data == "expression",
+                regex_expression.children,
+            )
+        )
         self._expression_list_common(expressions)
 
     def _expression_list_common(self, expressions: list[Tree]):
@@ -403,7 +472,12 @@ class SparqlSerializer(Visitor_Recursive):
         self._result += ") "
 
     def _expression_list(self, expression_list: Tree):
-        expressions = list(filter(lambda x: isinstance(x, Tree) and x.data == "expression", expression_list.children))
+        expressions = list(
+            filter(
+                lambda x: isinstance(x, Tree) and x.data == "expression",
+                expression_list.children,
+            )
+        )
         self._expression_list_common(expressions)
 
     def _exists_func(self, exists_func: Tree):
@@ -435,7 +509,9 @@ class SparqlSerializer(Visitor_Recursive):
                 elif child.data == "not_exists_func":
                     self._not_exists_func(child)
                 else:
-                    raise ValueError(f"Unexpected built_in_call tree value type: {child.data}")
+                    raise ValueError(
+                        f"Unexpected built_in_call tree value type: {child.data}"
+                    )
             elif isinstance(child, Token):
                 self._result += f"{child.value} "
             else:
@@ -459,7 +535,11 @@ class SparqlSerializer(Visitor_Recursive):
             self._built_in_call(value)
         elif value.data == "iri_or_function":
             self._iri_or_function(value)
-        elif value.data == "rdf_literal" or value.data == "numeric_literal" or value.data == "boolean_literal":
+        elif (
+            value.data == "rdf_literal"
+            or value.data == "numeric_literal"
+            or value.data == "boolean_literal"
+        ):
             self._rdf_literal(value)
         elif value.data == "var":
             self._var(value)
@@ -474,9 +554,13 @@ class SparqlSerializer(Visitor_Recursive):
                 if child.data == "primary_expression":
                     self._primary_expression(child)
                 else:
-                    raise ValueError(f"Unexpected unary_expression value type: {child.data}")
+                    raise ValueError(
+                        f"Unexpected unary_expression value type: {child.data}"
+                    )
             else:
-                raise TypeError(f"Unexpected unary_expression value type: {type(child)}")
+                raise TypeError(
+                    f"Unexpected unary_expression value type: {type(child)}"
+                )
 
     def _multiplicative_expression(self, multiplicative_expression: Tree):
         for child in multiplicative_expression.children:
@@ -486,9 +570,13 @@ class SparqlSerializer(Visitor_Recursive):
                 if child.data == "unary_expression":
                     self._unary_expression(child)
                 else:
-                    raise ValueError(f"Unexpected multiplicative_expression value type: {child.data}")
+                    raise ValueError(
+                        f"Unexpected multiplicative_expression value type: {child.data}"
+                    )
             else:
-                raise ValueError(f"Unexpected multiplicative_expression value type: {type(child)}")
+                raise ValueError(
+                    f"Unexpected multiplicative_expression value type: {type(child)}"
+                )
 
     def _additive_expression(self, additive_expression: Tree):
         for child in additive_expression.children:
@@ -497,14 +585,21 @@ class SparqlSerializer(Visitor_Recursive):
             elif isinstance(child, Tree):
                 if child.data == "multiplicative_expression":
                     self._multiplicative_expression(child)
-                elif child.data == "numeric_literal_positive" or child.data == "numeric_literal_negative":
+                elif (
+                    child.data == "numeric_literal_positive"
+                    or child.data == "numeric_literal_negative"
+                ):
                     self._numeric_literal(child)
                 elif child.data == "unary_expression":
                     self._unary_expression(child)
                 else:
-                    raise ValueError(f"Unexpected multiplicative_expression value type: {child.data}")
+                    raise ValueError(
+                        f"Unexpected multiplicative_expression value type: {child.data}"
+                    )
             else:
-                raise ValueError(f"Unexpected multiplicative_expression value type: {type(child)}")
+                raise ValueError(
+                    f"Unexpected multiplicative_expression value type: {type(child)}"
+                )
 
     def _numeric_expression(self, numeric_expression: Tree):
         additive_expression = numeric_expression.children[0]
@@ -541,24 +636,37 @@ class SparqlSerializer(Visitor_Recursive):
                 self._result += f"{second_value.children[0].value} {second_value.children[1].value} "
                 self._numeric_expression(second_value.children[2])
             else:
-                raise ValueError(f"Unexpected relational_expression second value type: {second_value.data}")
+                raise ValueError(
+                    f"Unexpected relational_expression second value type: {second_value.data}"
+                )
         elif len(relational_expression.children) > 2:
-            raise ValueError(f"Unexpected relational_expression children count: {len(relational_expression.children)}")
+            raise ValueError(
+                f"Unexpected relational_expression children count: {len(relational_expression.children)}"
+            )
 
     def _value_logical(self, value_logical: Tree):
         relational_expression = value_logical.children[0]
         self._relational_expression(relational_expression)
 
     def _conditional_and_expression(self, conditional_and_expression: Tree):
-        value_logicals = list(filter(lambda x: x.data == "value_logical", conditional_and_expression.children))
+        value_logicals = list(
+            filter(
+                lambda x: x.data == "value_logical", conditional_and_expression.children
+            )
+        )
         for i, value_logical in enumerate(value_logicals):
             self._value_logical(value_logical)
             if i + 1 != len(value_logicals):
                 self._result += " && "
 
     def _conditional_or_expression(self, conditional_or_expression: Tree):
-        conditional_and_expressions = list(filter(lambda x: x.data == "conditional_and_expression", conditional_or_expression.children))
-        for i,  conditional_and_expression in enumerate(conditional_and_expressions):
+        conditional_and_expressions = list(
+            filter(
+                lambda x: x.data == "conditional_and_expression",
+                conditional_or_expression.children,
+            )
+        )
+        for i, conditional_and_expression in enumerate(conditional_and_expressions):
             if i != 0 and i + 1 != len(conditional_and_expressions):
                 self._result += " || "
             self._conditional_and_expression(conditional_and_expression)
@@ -582,7 +690,9 @@ class SparqlSerializer(Visitor_Recursive):
         elif value.data == "select_clause_expression_as_var":
             self._select_clause_expression_as_var(value)
         else:
-            raise ValueError(f"Unexpected select_clause_var_or_expression value: {select_clause_var_or_expression.data}")
+            raise ValueError(
+                f"Unexpected select_clause_var_or_expression value: {select_clause_var_or_expression.data}"
+            )
 
     def _select_clause(self, select_clause: Tree):
         for child in select_clause.children:
@@ -591,8 +701,16 @@ class SparqlSerializer(Visitor_Recursive):
                     self._result += f"{'\t' * self._indent}"
                 self._result += f"{child.value} "
 
-        select_clause_var_or_expressions = list(filter(lambda x: isinstance(x, Tree) and x.data == "select_clause_var_or_expression", select_clause.children))
-        for i, select_clause_var_or_expression in enumerate(select_clause_var_or_expressions):
+        select_clause_var_or_expressions = list(
+            filter(
+                lambda x: isinstance(x, Tree)
+                and x.data == "select_clause_var_or_expression",
+                select_clause.children,
+            )
+        )
+        for i, select_clause_var_or_expression in enumerate(
+            select_clause_var_or_expressions
+        ):
             self._select_clause_var_or_expression(select_clause_var_or_expression)
             if i + 1 != len(select_clause_var_or_expressions):
                 self._result += " "
@@ -677,7 +795,11 @@ class SparqlSerializer(Visitor_Recursive):
         object_path = object_list_path.children[0]
         self._object_path(object_path)
 
-        object_list_path_others = list(filter(lambda x: x.data == "object_list_path_other", object_list_path.children))
+        object_list_path_others = list(
+            filter(
+                lambda x: x.data == "object_list_path_other", object_list_path.children
+            )
+        )
         for object_path_other in object_list_path_others:
             self._result += ", "
             self._object_path(object_path_other.children[0])
@@ -706,9 +828,13 @@ class SparqlSerializer(Visitor_Recursive):
                 if child.data == "path_one_in_property_set":
                     self._path_one_in_property_set(child)
                 else:
-                    raise ValueError(f"Unexpected path_negated_property_set value type: {child.data}")
+                    raise ValueError(
+                        f"Unexpected path_negated_property_set value type: {child.data}"
+                    )
             else:
-                raise TypeError(f"Unexpected path_negated_property_set value type: {type(child)}")
+                raise TypeError(
+                    f"Unexpected path_negated_property_set value type: {type(child)}"
+                )
 
     def _path_primary(self, path_primary: Tree):
         value = path_primary.children[0]
@@ -737,7 +863,9 @@ class SparqlSerializer(Visitor_Recursive):
             self._path_mod(path_mod)
 
         if len(path_elt.children) > 2:
-            raise ValueError(f"Unexpected path_elt children size: {len(path_elt.children)}")
+            raise ValueError(
+                f"Unexpected path_elt children size: {len(path_elt.children)}"
+            )
 
     def _path_elt_or_inverse(self, path_elt_or_inverse: Tree):
         if len(path_elt_or_inverse.children) == 1:
@@ -748,17 +876,23 @@ class SparqlSerializer(Visitor_Recursive):
             path_elt = path_elt_or_inverse.children[1]
             self._path_elt(path_elt)
         else:
-            raise ValueError(f"Unexpected path_elt_or_inverse children size: {len(path_elt_or_inverse.children)}")
+            raise ValueError(
+                f"Unexpected path_elt_or_inverse children size: {len(path_elt_or_inverse.children)}"
+            )
 
     def _path_sequence(self, path_sequence: Tree):
-        path_elt_or_inverses = list(filter(lambda x: x.data == "path_elt_or_inverse", path_sequence.children))
+        path_elt_or_inverses = list(
+            filter(lambda x: x.data == "path_elt_or_inverse", path_sequence.children)
+        )
         for i, path_elt_or_inverse_elt in enumerate(path_elt_or_inverses):
             self._path_elt_or_inverse(path_elt_or_inverse_elt)
             if i + 1 != len(path_elt_or_inverses):
                 self._result += "/"
 
     def _path_alternative(self, path_alternative: Tree):
-        path_sequences = list(filter(lambda x: x.data == "path_sequence", path_alternative.children))
+        path_sequences = list(
+            filter(lambda x: x.data == "path_sequence", path_alternative.children)
+        )
         for i, path_sequence in enumerate(path_sequences):
             self._path_sequence(path_sequence)
             if i + 1 != len(path_sequences):
@@ -774,7 +908,9 @@ class SparqlSerializer(Visitor_Recursive):
         self._path(path)
 
     def _collection(self, collection: Tree):
-        graph_nodes = list(filter(lambda x: x.data == "graph_node", collection.children))
+        graph_nodes = list(
+            filter(lambda x: x.data == "graph_node", collection.children)
+        )
         self._result += "("
 
         for graph_node in graph_nodes:
@@ -798,7 +934,11 @@ class SparqlSerializer(Visitor_Recursive):
         self._object_list(object_list)
 
     def _property_list_not_empty(self, property_list_not_empty: Tree):
-        verb_object_lists = list(filter(lambda x: x.data == "verb_object_list", property_list_not_empty.children))
+        verb_object_lists = list(
+            filter(
+                lambda x: x.data == "verb_object_list", property_list_not_empty.children
+            )
+        )
         for i, verb_object_list in enumerate(verb_object_lists):
             self._verb_object_list(verb_object_list)
             if i + 1 != len(verb_object_lists):
@@ -839,23 +979,31 @@ class SparqlSerializer(Visitor_Recursive):
             if i + 1 != len(objects):
                 self._result += ", "
 
-    def _property_list_path_not_empty_rest(self, property_list_path_not_empty_rest: Tree):
+    def _property_list_path_not_empty_rest(
+        self, property_list_path_not_empty_rest: Tree
+    ):
         first_value = property_list_path_not_empty_rest.children[0]
         if first_value.data == "verb_path":
             self._verb_path(first_value)
         elif first_value.data == "verb_simple":
             self._verb_simple(first_value)
         else:
-            raise ValueError(f"Unexpected property_list_path_not_empty_rest value type: {first_value.data}")
+            raise ValueError(
+                f"Unexpected property_list_path_not_empty_rest value type: {first_value.data}"
+            )
 
         object_list = property_list_path_not_empty_rest.children[1]
         self._object_list(object_list)
 
-    def _property_list_path_not_empty_other(self, property_list_path_not_empty_other: Tree):
+    def _property_list_path_not_empty_other(
+        self, property_list_path_not_empty_other: Tree
+    ):
         self._result += ";\n"
 
         if property_list_path_not_empty_other.children:
-            property_list_path_not_empty_rest = property_list_path_not_empty_other.children[0]
+            property_list_path_not_empty_rest = (
+                property_list_path_not_empty_other.children[0]
+            )
             self._property_list_path_not_empty_rest(property_list_path_not_empty_rest)
 
     def _property_list_path_not_empty(self, property_list_path_not_empty: Tree):
@@ -870,7 +1018,12 @@ class SparqlSerializer(Visitor_Recursive):
         object_list_path = property_list_path_not_empty.children[1]
         self._object_list_path(object_list_path)
 
-        property_list_path_not_empty_others = list(filter(lambda x: x.data == "property_list_path_not_empty_other", property_list_path_not_empty.children))
+        property_list_path_not_empty_others = list(
+            filter(
+                lambda x: x.data == "property_list_path_not_empty_other",
+                property_list_path_not_empty.children,
+            )
+        )
         for property_list_not_empty_other in property_list_path_not_empty_others:
             self._property_list_path_not_empty_other(property_list_not_empty_other)
 
@@ -951,9 +1104,13 @@ class SparqlSerializer(Visitor_Recursive):
                 if child.data == "group_graph_pattern":
                     self._group_graph_pattern(child)
                 else:
-                    raise ValueError(f"Unexpected group_graph_pattern value type: {child.data}")
+                    raise ValueError(
+                        f"Unexpected group_graph_pattern value type: {child.data}"
+                    )
             else:
-                raise ValueError(f"Unexpected group_graph_pattern value type: {type(child)}")
+                raise ValueError(
+                    f"Unexpected group_graph_pattern value type: {type(child)}"
+                )
 
     def _bracketted_expression(self, bracketted_expression: Tree):
         expression = bracketted_expression.children[0]
@@ -1032,9 +1189,13 @@ class SparqlSerializer(Visitor_Recursive):
                 elif child.data == "group_graph_pattern":
                     self._group_graph_pattern(child)
                 else:
-                    raise ValueError(f"Unexpected service_graph_pattern value type: {child.data}")
+                    raise ValueError(
+                        f"Unexpected service_graph_pattern value type: {child.data}"
+                    )
             else:
-                raise ValueError(f"Unexpected service_graph_pattern value type: {type(child)}")
+                raise ValueError(
+                    f"Unexpected service_graph_pattern value type: {type(child)}"
+                )
 
     def _graph_pattern_not_triples(self, graph_pattern_not_triples: Tree):
         value = graph_pattern_not_triples.children[0]
@@ -1055,7 +1216,9 @@ class SparqlSerializer(Visitor_Recursive):
         elif value.data == "inline_data":
             self._inline_data(value)
         else:
-            raise ValueError(f"Unexpected graph_pattern_not_triples value type: {value.data}")
+            raise ValueError(
+                f"Unexpected graph_pattern_not_triples value type: {value.data}"
+            )
 
     def _group_graph_pattern_sub_other(self, group_graph_pattern_sub_other: Tree):
         self._result += "\n"
@@ -1078,7 +1241,9 @@ class SparqlSerializer(Visitor_Recursive):
             elif child.data == "group_graph_pattern_sub_other":
                 self._group_graph_pattern_sub_other(child)
             else:
-                raise ValueError(f"Unexpected group_graph_pattern_sub_other value type: {child.data}")
+                raise ValueError(
+                    f"Unexpected group_graph_pattern_sub_other value type: {child.data}"
+                )
 
     def _sub_select(self, sub_select: Tree):
         select_clause = sub_select.children[0]
@@ -1116,21 +1281,29 @@ class SparqlSerializer(Visitor_Recursive):
         elif len(where_clause.children) == 1:
             group_graph_pattern = where_clause.children[0]
         else:
-            raise ValueError(f"Unexpected where_clause children count: {len(where_clause.children)}")
+            raise ValueError(
+                f"Unexpected where_clause children count: {len(where_clause.children)}"
+            )
 
         self._group_graph_pattern(group_graph_pattern)
 
     def _select_query(self, select_query: Tree):
         select_clause = select_query.children[0]
         self._select_clause(select_clause)
-        dataset_clauses = list(filter(lambda x: x.data == "dataset_clause", select_query.children))
+        dataset_clauses = list(
+            filter(lambda x: x.data == "dataset_clause", select_query.children)
+        )
         for dataset_clause in dataset_clauses:
             self._dataset_clause(dataset_clause)
 
-        where_clause = list(filter(lambda x: x.data == "where_clause", select_query.children))[0]
+        where_clause = list(
+            filter(lambda x: x.data == "where_clause", select_query.children)
+        )[0]
         self._where_clause(where_clause)
 
-        solution_modifier = list(filter(lambda x: x.data == "solution_modifier", select_query.children))[0]
+        solution_modifier = list(
+            filter(lambda x: x.data == "solution_modifier", select_query.children)
+        )[0]
         self._solution_modifier(solution_modifier)
 
     def _values_clause(self, values_clause: Tree):
@@ -1150,7 +1323,9 @@ class SparqlSerializer(Visitor_Recursive):
         else:
             raise ValueError(f"Unexpected value for data_block: {inline_data.data}")
 
-    def _data_block_value(self, data_block_values_group: list[Tree], newline: bool = False):
+    def _data_block_value(
+        self, data_block_values_group: list[Tree], newline: bool = False
+    ):
         self._result += f"{self._indent * '\t'}"
 
         if len(data_block_values_group) > 1:
@@ -1169,25 +1344,35 @@ class SparqlSerializer(Visitor_Recursive):
 
     def _inline_data_one_var(self, inline_data_one_var: Tree):
         var = inline_data_one_var.children[0]
-        data_block_values = list(filter(lambda x: x.data == "data_block_value", inline_data_one_var.children))
+        data_block_values = list(
+            filter(lambda x: x.data == "data_block_value", inline_data_one_var.children)
+        )
 
         self._var(var)
         self._result += "{\n"
         self._indent += 1
         for i, data_block_value in enumerate(data_block_values):
-            self._data_block_value([data_block_value], newline=True if i + 1 != len(data_block_values) else False)
+            self._data_block_value(
+                [data_block_value],
+                newline=True if i + 1 != len(data_block_values) else False,
+            )
         self._result += "\n}"
         self._indent -= 1
 
     def _inline_data_full(self, inline_data_full: Tree):
         vars_ = list(filter(lambda x: x.data == "var", inline_data_full.children))
-        data_block_values = list(filter(lambda x: x.data == "data_block_value", inline_data_full.children))
+        data_block_values = list(
+            filter(lambda x: x.data == "data_block_value", inline_data_full.children)
+        )
         data_block_values_groups = list(zip(*(iter(data_block_values),) * len(vars_)))
 
         self._result += f"({get_vars(vars_)}) {{\n"
         self._indent += 1
         for i, data_block_values_group in enumerate(data_block_values_groups):
-            self._data_block_value(data_block_values_group, newline=True if i + 1 != len(data_block_values) else False)
+            self._data_block_value(
+                data_block_values_group,
+                newline=True if i + 1 != len(data_block_values) else False,
+            )
         self._result += "\n}"
         self._indent -= 1
 

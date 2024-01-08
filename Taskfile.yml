@@ -1,0 +1,24 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  package_name: sparql
+
+tasks:
+  code:check:
+    desc: Check whether code formatting rules apply.
+    cmds:
+      - poetry run black --check {{.package_name}} tests
+      - poetry run ruff check {{.package_name}} tests
+
+  code:
+    desc: Format and standardise code.
+    cmds:
+      - poetry run black {{.package_name}} tests
+      - poetry run ruff --fix {{.package_name}} tests
+
+  test:
+    desc: Run Python tests.
+    cmds:
+      - poetry run pytest

@@ -19,3 +19,9 @@ ruff = "^0.1.11"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+select = [
+    "I001",
+    "I002"
+]
