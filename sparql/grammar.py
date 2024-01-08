@@ -79,20 +79,20 @@ select_clause_expression_as_var: "(" expression /AS/i var ")"
 
 expression: conditional_or_expression
 
-conditional_or_expression: conditional_and_expression ( "||" conditional_and_expression )*
+conditional_or_expression: conditional_and_expression ( DOUBLE_PIPE conditional_and_expression )*
 
-conditional_and_expression: value_logical ( "&&" value_logical )*
+conditional_and_expression: value_logical ( LOGICAL_AND value_logical )*
 
 value_logical: relational_expression
 
-relational_expression: numeric_expression ( numeric_expression_equals
-                                            | numeric_expression_not_equals
-                                            | numeric_expression_lt
-                                            | numeric_expression_gt
-                                            | numeric_expression_lt_or_equal_to
-                                            | numeric_expression_gt_or_equal_to
-                                            | numeric_expression_in_expression_list
-                                            | numeric_expression_not_in_expression_list )?
+relational_expression: numeric_expression ( EQUALS numeric_expression
+                                            | NOT_EQUALS numeric_expression 
+                                            | LT numeric_expression
+                                            | GT numeric_expression
+                                            | LT_OR_EQUAL_TO numeric_expression
+                                            | GT_OR_EQUAL_TO numeric_expression 
+                                            | /IN/i expression_list
+                                            | /NOT/i /IN/i expression_list )?
 
 numeric_expression_equals: "=" numeric_expression
 
@@ -286,19 +286,13 @@ values_clause: ( /VALUES/i data_block )?
 
 data_block: inline_data_one_var | inline_data_full
 
-inline_data_one_var: var left_curly_brace data_block_value* right_curly_brace
+inline_data_one_var: var LEFT_CURLY_BRACE data_block_value* RIGHT_CURLY_BRACE
 
-inline_data_full: ( NIL | left_parenthesis var* right_parenthesis ) left_curly_brace ( left_parenthesis data_block_value* right_parenthesis | NIL )* right_curly_brace
+inline_data_full: ( NIL | LEFT_PARENTHESIS var* RIGHT_PARENTHESIS ) LEFT_CURLY_BRACE ( data_block_value_group )* RIGHT_CURLY_BRACE
 
-data_block_value: iri | rdf_literal | numeric_literal | boolean_literal | undef
+data_block_value_group: LEFT_PARENTHESIS data_block_value* RIGHT_PARENTHESIS | NIL
 
-left_curly_brace: LEFT_CURLY_BRACE
-
-right_curly_brace: RIGHT_CURLY_BRACE
-
-left_parenthesis: LEFT_PARENTHESIS
-
-right_parenthesis: RIGHT_PARENTHESIS
+data_block_value: iri | rdf_literal | numeric_literal | boolean_literal | UNDEF
 
 string: STRING_LITERAL1 | STRING_LITERAL2 | STRING_LITERAL_LONG1 | STRING_LITERAL_LONG2 | ESCAPED_STRING
 
@@ -313,8 +307,6 @@ datatype: ("^^" iri )
 langtag: LANGTAG
 
 boolean_literal: true | false
-
-undef: UNDEF
 
 true: TRUE
 
@@ -364,11 +356,25 @@ blank_node: BLANK_NODE_LABEL | ANON
 # Productions for terminals:
 #
 
+NOT_EQUALS: "!="
+
+LT: "<"
+
+GT: ">"
+
+LT_OR_EQUAL_TO: "<="
+
+GT_OR_EQUAL_TO: ">="
+
+LOGICAL_AND: "&&"
+
 EXCLAMATION_MARK: "!"
 
 COMMA: ","
 
 PIPE: "|"
+
+DOUBLE_PIPE: "||"
 
 PLUS: "+"
 
@@ -468,7 +474,7 @@ PN_CHARS_BASE: /[A-Z]/ | /[a-z]/
                 | /[\u3001-\uD7FF]/
                 | /[\uF900-\uFDCF]/
                 | /[\uFDF0-\uFFFD]/
-                | /[\u10000-\uEFFFF]/
+                | /[\U00010000-\U000EFFFF]/
 
 PN_CHARS: PN_CHARS_U | "-" | /[0-9]/ | "\u00B7" | /[\u0300-\u036F]/ | /[\u203F-\u2040]/
 

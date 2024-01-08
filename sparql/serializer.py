@@ -443,13 +443,22 @@ class SparqlSerializer(Visitor_Recursive):
         else:
             raise ValueError(f"Unexpected construct_query value type: {value.data}")
 
+    def _string(self, string: Tree):
+        self._result += f"{string.children[0].value} "
+
     def _aggregate(self, aggregate: Tree):
         for child in aggregate.children:
             if isinstance(child, Token):
-                self._result += f"{child.value}"
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "expression":
+                    self._expression(child)
+                elif child.data == "string":
+                    self._string(child)
+                else:
+                    raise ValueError(f"Unexpected aggregate value type: {child.data}")
             else:
-                # An expression
-                self._expression(child)
+                raise TypeError(f"Unexpected aggregate value type: {type(child)}")
 
     def _regex_expression(self, regex_expression: Tree):
         regex_str = regex_expression.children[0].value
@@ -594,11 +603,11 @@ class SparqlSerializer(Visitor_Recursive):
                     self._unary_expression(child)
                 else:
                     raise ValueError(
-                        f"Unexpected multiplicative_expression value type: {child.data}"
+                        f"Unexpected additive_expression value type: {child.data}"
                     )
             else:
                 raise ValueError(
-                    f"Unexpected multiplicative_expression value type: {type(child)}"
+                    f"Unexpected additive_expression value type: {type(child)}"
                 )
 
     def _numeric_expression(self, numeric_expression: Tree):
@@ -606,70 +615,58 @@ class SparqlSerializer(Visitor_Recursive):
         self._additive_expression(additive_expression)
 
     def _relational_expression(self, relational_expression: Tree):
-        numeric_expression = relational_expression.children[0]
-        self._numeric_expression(numeric_expression)
-
-        if len(relational_expression.children) == 2:
-            second_value = relational_expression.children[1]
-            if second_value.data == "numeric_expression_equals":
-                self._result += "= "
-                self._numeric_expression(second_value.children[0])
-            elif second_value.data == "numeric_expression_not_equals":
-                self._result += "!= "
-                self._numeric_expression(second_value.children[0])
-            elif second_value.data == "numeric_expression_lt":
-                self._result += "< "
-                self._numeric_expression(second_value.children[0])
-            elif second_value.data == "numeric_expression_gt":
-                self._result += "> "
-                self._numeric_expression(second_value.children[0])
-            elif second_value.data == "numeric_expression_lt_or_equal_to":
-                self._result += "<= "
-                self._numeric_expression(second_value.children[0])
-            elif second_value.data == "numeric_expression_gt_or_equal_to":
-                self._result += ">= "
-                self._numeric_expression(second_value.children[0])
-            elif second_value.data == "numeric_expression_in_expression_list":
-                self._result += f"{second_value.children[0].value} "
-                self._numeric_expression(second_value.children[1])
-            elif second_value.data == "numeric_expression_not_in_expression_list":
-                self._result += f"{second_value.children[0].value} {second_value.children[1].value} "
-                self._numeric_expression(second_value.children[2])
+        for child in relational_expression.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "numeric_expression":
+                    self._numeric_expression(child)
+                elif child.data == "expression_list":
+                    self._expression_list(child)
+                else:
+                    raise ValueError(
+                        f"Unexpected relational_expression value type: {child.data}"
+                    )
             else:
-                raise ValueError(
-                    f"Unexpected relational_expression second value type: {second_value.data}"
+                raise TypeError(
+                    f"Unexpected relational_expression value type: {type(child)}"
                 )
-        elif len(relational_expression.children) > 2:
-            raise ValueError(
-                f"Unexpected relational_expression children count: {len(relational_expression.children)}"
-            )
 
     def _value_logical(self, value_logical: Tree):
         relational_expression = value_logical.children[0]
         self._relational_expression(relational_expression)
 
     def _conditional_and_expression(self, conditional_and_expression: Tree):
-        value_logicals = list(
-            filter(
-                lambda x: x.data == "value_logical", conditional_and_expression.children
-            )
-        )
-        for i, value_logical in enumerate(value_logicals):
-            self._value_logical(value_logical)
-            if i + 1 != len(value_logicals):
-                self._result += " && "
+        for child in conditional_and_expression.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "value_logical":
+                    self._value_logical(child)
+                else:
+                    raise ValueError(
+                        f"Unexpected _conditional_and_expression value type: {child.data}"
+                    )
+            else:
+                raise ValueError(
+                    f"Unexpected _conditional_and_expression value type: {type(child)}"
+                )
 
     def _conditional_or_expression(self, conditional_or_expression: Tree):
-        conditional_and_expressions = list(
-            filter(
-                lambda x: x.data == "conditional_and_expression",
-                conditional_or_expression.children,
-            )
-        )
-        for i, conditional_and_expression in enumerate(conditional_and_expressions):
-            if i != 0 and i + 1 != len(conditional_and_expressions):
-                self._result += " || "
-            self._conditional_and_expression(conditional_and_expression)
+        for child in conditional_or_expression.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "conditional_and_expression":
+                    self._conditional_and_expression(child)
+                else:
+                    raise ValueError(
+                        f"Unexpected _conditional_or_expression value type: {child.data}"
+                    )
+            else:
+                raise ValueError(
+                    f"Unexpected _conditional_or_expression value type: {type(child)}"
+                )
 
     def _expression(self, expression: Tree):
         conditional_or_expression = expression.children[0]
@@ -681,7 +678,7 @@ class SparqlSerializer(Visitor_Recursive):
         self._expression(expression)
         as_str = expression_as_var.children[1].value
         var = get_var(expression_as_var.children[2])
-        self._result += f" {as_str} {var})"
+        self._result += f" {as_str} {var}) "
 
     def _select_clause_var_or_expression(self, select_clause_var_or_expression: Tree):
         value = select_clause_var_or_expression.children[0]
@@ -840,7 +837,7 @@ class SparqlSerializer(Visitor_Recursive):
         value = path_primary.children[0]
         if isinstance(value, Token):
             if value.type == "A":
-                self._result += "a"
+                self._result += "a "
         elif isinstance(value, Tree):
             if value.data == "iri":
                 self._iri(value)
@@ -1066,7 +1063,7 @@ class SparqlSerializer(Visitor_Recursive):
 
     def _inline_data(self, inline_data: Tree):
         values_str = inline_data.children[0]
-        self._result += f"{values_str} "
+        self._result += f"{'\t' * self._indent}{values_str} "
         data_block = inline_data.children[1]
         self._data_block(data_block)
         self._result += "\n"
@@ -1260,7 +1257,7 @@ class SparqlSerializer(Visitor_Recursive):
 
     def _group_graph_pattern(self, group_graph_pattern: Tree):
         self._indent += 1
-        self._result += f"{'\t' * (self._indent - 1)}{{\n"
+        self._result += "{\n"
 
         value = group_graph_pattern.children[0]
         if value.data == "sub_select":
@@ -1323,58 +1320,88 @@ class SparqlSerializer(Visitor_Recursive):
         else:
             raise ValueError(f"Unexpected value for data_block: {inline_data.data}")
 
-    def _data_block_value(
-        self, data_block_values_group: list[Tree], newline: bool = False
-    ):
-        self._result += f"{self._indent * '\t'}"
-
-        if len(data_block_values_group) > 1:
-            self._result += "("
-
-        for i, data_block_value in enumerate(data_block_values_group):
-            self._result += get_data_block_value(data_block_value)
-            if i + 1 != len(data_block_values_group):
-                self._result += " "
-
-        if len(data_block_values_group) > 1:
-            self._result += ")"
-
-        if newline:
-            self._result += "\n"
+    def _data_block_value(self, data_block_value: Tree):
+        for child in data_block_value.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "iri":
+                    self._iri(child)
+                elif (
+                    child.data == "rdf_literal"
+                    or child.data == "numeric_literal"
+                    or child.data == "boolean_literal"
+                ):
+                    self._rdf_literal(child)
+                else:
+                    raise ValueError(
+                        f"Unexpected data_block_value value type: {child.data}"
+                    )
+            else:
+                raise TypeError(
+                    f"Unexpected data_block_value value type: {type(child)}"
+                )
 
     def _inline_data_one_var(self, inline_data_one_var: Tree):
-        var = inline_data_one_var.children[0]
-        data_block_values = list(
-            filter(lambda x: x.data == "data_block_value", inline_data_one_var.children)
-        )
+        for child in inline_data_one_var.children:
+            if isinstance(child, Token):
+                if child.value == "{":
+                    self._result += "{\n"
+                elif child.value == "}":
+                    self._result += f"\n{'\t' * self._indent}}}"
+            elif isinstance(child, Tree):
+                if child.data == "var":
+                    self._var(child)
+                elif child.data == "data_block_value":
+                    self._indent += 1
+                    self._result += f"{'\t' * self._indent}"
+                    self._data_block_value(child)
+                    self._indent -= 1
 
-        self._var(var)
-        self._result += "{\n"
-        self._indent += 1
-        for i, data_block_value in enumerate(data_block_values):
-            self._data_block_value(
-                [data_block_value],
-                newline=True if i + 1 != len(data_block_values) else False,
-            )
-        self._result += "\n}"
-        self._indent -= 1
+    def _data_block_value_group(self, data_block_value_group: Tree):
+        for child in data_block_value_group.children:
+            if isinstance(child, Token):
+                if child.value == "(":
+                    self._result += f"{'\t' * self._indent}("
+                else:
+                    self._result += f"{child.value}\n"
+            elif isinstance(child, Tree):
+                if child.data == "data_block_value":
+                    self._data_block_value(child)
+                else:
+                    raise ValueError(f"Unexpected data block value: {child.data}")
+            else:
+                raise TypeError(f"Unexpected data block value: {type(child)}")
 
     def _inline_data_full(self, inline_data_full: Tree):
-        vars_ = list(filter(lambda x: x.data == "var", inline_data_full.children))
-        data_block_values = list(
-            filter(lambda x: x.data == "data_block_value", inline_data_full.children)
-        )
-        data_block_values_groups = list(zip(*(iter(data_block_values),) * len(vars_)))
+        for child in inline_data_full.children:
+            self._indent += 1
+            if isinstance(child, Token):
+                if child.value == "{":
+                    self._result += "{\n"
+                elif child.value == "}":
+                    self._result += f"{'\t' * (self._indent - 1)}}}"
+                elif child.value == "(":
+                    self._result += f"{child.value}"
+                elif child.value == ")":
+                    self._result += f"{child.value} "
+                else:
+                    raise ValueError(f"Unexpected data block value: {child.value}")
+            elif isinstance(child, Tree):
+                if child.data == "var":
+                    self._var(child)
+                elif child.data == "data_block_value_group":
+                    self._data_block_value_group(child)
+                else:
+                    raise ValueError(
+                        f"Unexpected inline_data_full value type: {child.data}"
+                    )
+            else:
+                raise TypeError(
+                    f"Unexpected inline_data_full value type: {type(child)}"
+                )
 
-        self._result += f"({get_vars(vars_)}) {{\n"
-        self._indent += 1
-        for i, data_block_values_group in enumerate(data_block_values_groups):
-            self._data_block_value(
-                data_block_values_group,
-                newline=True if i + 1 != len(data_block_values) else False,
-            )
-        self._result += "\n}"
-        self._indent -= 1
+            self._indent -= 1
 
 
 class _SparqlSerializer(Visitor_Recursive):
