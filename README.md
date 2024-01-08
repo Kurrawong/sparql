@@ -22,4 +22,6 @@ Removing the last regex `/[\u10000-\uEFFFF]/` in `PN_CHARS_BASE` allows the `pre
 
 Will need to study the grammar further to ensure there are no other errors and figure out what is going on. It could also be possible that the rule is being interpreted differently under Lark/Python and by chance, the tests are passing.
 
-Update: Removing the last regex rule no longer breaks the tests. Keeping it commented out for now.
+**Update**: Removing the last regex rule no longer breaks the tests. Keeping it commented out for now.
+
+**Update**: Keeping it commented out fails other tests from the SPARQL 1.1 Syntax Query test suite. Uncommenting for now.

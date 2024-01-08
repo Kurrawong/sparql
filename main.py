@@ -2,19 +2,12 @@ from sparql.parser import sparql_parser
 from sparql.serializer import SparqlSerializer
 
 query = """
-PREFIX aGeo: <http://example.org/geo#>
+PREFIX     :    <http://example.org/ns#>
+PREFIX foaf:    <http://xmlns.com/foaf/0.1/>
 
-SELECT ?neighbor
-WHERE { ?a aGeo:placeName "Grenoble" .
-        ?a aGeo:locationX ?axLoc .
-        ?a aGeo:locationY ?ayLoc .
-
-        ?b aGeo:placeName ?neighbor .
-        ?b aGeo:locationX ?bxLoc .
-        ?b aGeo:locationY ?byLoc .
-
-        FILTER ( aGeo:distance(?axLoc, ?ayLoc, ?bxLoc, ?byLoc) < 10 ) .
-      }
+SELECT ?name
+WHERE { ?x foaf:name ?name ; :empId ?emp }
+ORDER BY ?name DESC(?emp)
 """
 
 tree = sparql_parser.parse(query)

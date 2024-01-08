@@ -467,11 +467,16 @@ class SparqlSerializer(Visitor_Recursive):
             raise ValueError(f"Unexpected primary_expression value type: {value.data}")
 
     def _unary_expression(self, unary_expression: Tree):
-        if len(unary_expression.children) > 1:
-            raise NotImplementedError
-
-        primary_expression = unary_expression.children[0]
-        self._primary_expression(primary_expression)
+        for child in unary_expression.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value}"
+            elif isinstance(child, Tree):
+                if child.data == "primary_expression":
+                    self._primary_expression(child)
+                else:
+                    raise ValueError(f"Unexpected unary_expression value type: {child.data}")
+            else:
+                raise TypeError(f"Unexpected unary_expression value type: {type(child)}")
 
     def _multiplicative_expression(self, multiplicative_expression: Tree):
         for child in multiplicative_expression.children:

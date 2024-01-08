@@ -116,9 +116,9 @@ additive_expression: multiplicative_expression ( PLUS multiplicative_expression 
 
 multiplicative_expression: unary_expression ( ASTERIX unary_expression | FORWARD_SLASH unary_expression )*
 
-unary_expression: "!" primary_expression
-                  | "+" primary_expression 
-                  | "-" primary_expression
+unary_expression: EXCLAMATION_MARK primary_expression
+                  | PLUS primary_expression 
+                  | MINUS primary_expression
                   | primary_expression
 
 primary_expression: bracketted_expression | built_in_call | iri_or_function | rdf_literal | numeric_literal | boolean_literal | var
@@ -364,6 +364,8 @@ blank_node: BLANK_NODE_LABEL | ANON
 # Productions for terminals:
 #
 
+EXCLAMATION_MARK: "!"
+
 COMMA: ","
 
 PIPE: "|"
@@ -466,7 +468,7 @@ PN_CHARS_BASE: /[A-Z]/ | /[a-z]/
                 | /[\u3001-\uD7FF]/
                 | /[\uF900-\uFDCF]/
                 | /[\uFDF0-\uFFFD]/
-                #| /[\u10000-\uEFFFF]/
+                | /[\u10000-\uEFFFF]/
 
 PN_CHARS: PN_CHARS_U | "-" | /[0-9]/ | "\u00B7" | /[\u0300-\u036F]/ | /[\u203F-\u2040]/
 
