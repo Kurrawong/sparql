@@ -1,6 +1,6 @@
 grammar = r"""query_unit: query
 
-query: prologue ( select_query | construct_query ) values_clause
+query: prologue ( select_query | construct_query | describe_query | ask_query ) values_clause
 
 prologue: ( base_decl | prefix_decl )*
 
@@ -31,6 +31,10 @@ property_list: property_list_not_empty?
 triples_template: triples_same_subject ( DOT triples_template? )?
 
 select_query: select_clause dataset_clause* where_clause solution_modifier
+
+describe_query: /DESCRIBE/i ( var_or_iri+ | ASTERIX ) dataset_clause* where_clause? solution_modifier
+
+ask_query: /ASK/i dataset_clause* where_clause solution_modifier
 
 dataset_clause: /FROM/i ( default_graph_clause | named_graph_clause )
 
@@ -122,57 +126,57 @@ primary_expression: bracketted_expression | built_in_call | iri_or_function | rd
 bracketted_expression: "(" expression ")"
 
 built_in_call: aggregate
-               | /STR/i "(" expression ")"
-               | /LANG/i "(" expression ")"
-               | /LANGMATCHES/i "(" expression ")"
-               | /DATATYPE/i "(" expression ")"
-               | /BOUND/i "(" expression ")"
-               | /IRI/i "(" expression ")"
-               | /URI/i "(" expression ")"
-               | /BNODE/i ( "(" expression ")" | NIL )
+               | /STR/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /LANG/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /LANGMATCHES/i LEFT_PARENTHESIS expression COMMA expression RIGHT_PARENTHESIS
+               | /DATATYPE/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /BOUND/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /IRI/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /URI/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /BNODE/i ( LEFT_PARENTHESIS expression RIGHT_PARENTHESIS | NIL )
                | /RAND/i NIL
-               | /ABS/i "(" expression ")"
-               | /CEIL/i "(" expression ")"
-               | /FLOOR/i "(" expression ")"
-               | /ROUND/i "(" expression ")"
+               | /ABS/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /CEIL/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /FLOOR/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /ROUND/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
                | /CONCAT/i expression_list
                | substring_expression
-               | /STRLEN/i "(" expression ")"
+               | /STRLEN/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
                | str_replace_expression
-               | /UCASE/i "(" expression ")"
-               | /LCASE/i "(" expression ")"
-               | /ENCODE_FOR_URI/i "(" expression ")"
-               | /CONTAINS/i "(" expression "," expression ")"
-               | /STRSTARTS/i "(" expression "," expression ")"
-               | /STRENDS/i "(" expression "," expression ")"
-               | /STRBEFORE/i "(" expression "," expression ")"
-               | /STRAFTER/i "(" expression "," expression ")"
-               | /YEAR/i "(" expression ")"
-               | /MONTH/i "(" expression ")"
-               | /DAY/i "(" expression ")"
-               | /HOURS/i "(" expression ")"
-               | /MINUTES/i "(" expression ")"
-               | /SECONDS/i "(" expression ")"
-               | /TIMEZONE/i "(" expression ")"
-               | /TZ/i "(" expression ")"
+               | /UCASE/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /LCASE/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /ENCODE_FOR_URI/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /CONTAINS/i LEFT_PARENTHESIS expression COMMA expression RIGHT_PARENTHESIS
+               | /STRSTARTS/i LEFT_PARENTHESIS expression COMMA expression RIGHT_PARENTHESIS
+               | /STRENDS/i LEFT_PARENTHESIS expression COMMA expression RIGHT_PARENTHESIS
+               | /STRBEFORE/i LEFT_PARENTHESIS expression COMMA expression RIGHT_PARENTHESIS
+               | /STRAFTER/i LEFT_PARENTHESIS expression COMMA expression RIGHT_PARENTHESIS
+               | /YEAR/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /MONTH/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /DAY/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /HOURS/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /MINUTES/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /SECONDS/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /TIMEZONE/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /TZ/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
                | /NOW/i NIL
                | /UUID/i NIL
                | /STRUUID/ NIL
-               | /MD5/i "(" expression ")"
-               | /SHA1/i "(" expression ")"
-               | /SHA256/i "(" expression ")"
-               | /SHA384/i "(" expression ")"
-               | /SHA512/i "(" expression ")"
+               | /MD5/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /SHA1/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /SHA256/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /SHA384/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /SHA512/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
                | /COALESCE/i expression_list
-               | /IF/i "(" expression "," expression "," expression ")"
-               | /STRLANG/i "(" expression "," expression ")"
-               | /STRDTZ/i "(" expression "," expression ")"
-               | /sameTerm/i "(" expression "," expression ")"
-               | /isIRI/i "(" expression ")"
-               | /isURI/i "(" expression ")"
-               | /isBLANK/i "(" expression ")"
-               | /isLITERAL/i "(" expression ")"
-               | /isNUMERIC/i "(" expression ")"
+               | /IF/i LEFT_PARENTHESIS expression COMMA expression COMMA expression RIGHT_PARENTHESIS
+               | /STRLANG/i LEFT_PARENTHESIS expression COMMA expression RIGHT_PARENTHESIS
+               | /STRDTZ/i LEFT_PARENTHESIS expression COMMA expression RIGHT_PARENTHESIS
+               | /sameTerm/i LEFT_PARENTHESIS expression COMMA expression RIGHT_PARENTHESIS
+               | /isIRI/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /isURI/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /isBLANK/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /isLITERAL/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+               | /isNUMERIC/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
                | regex_expression
                | exists_func
                | not_exists_func
@@ -462,7 +466,7 @@ PN_CHARS_BASE: /[A-Z]/ | /[a-z]/
                 | /[\u3001-\uD7FF]/
                 | /[\uF900-\uFDCF]/
                 | /[\uFDF0-\uFFFD]/
-                | /[\u10000-\uEFFFF]/
+                #| /[\u10000-\uEFFFF]/
 
 PN_CHARS: PN_CHARS_U | "-" | /[0-9]/ | "\u00B7" | /[\u0300-\u036F]/ | /[\u203F-\u2040]/
 

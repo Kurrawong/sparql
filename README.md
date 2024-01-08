@@ -21,3 +21,5 @@ Instead of being captured as one `prefixed_name`, it should be 2 prefixed names 
 Removing the last regex `/[\u10000-\uEFFFF]/` in `PN_CHARS_BASE` allows the `prefixed_name` to be matched correctly as 2 prefixed names but this then breaks other tests. The suspicion is that somehow `/[\u10000-\uEFFFF]/` is matching the `|` character. 
 
 Will need to study the grammar further to ensure there are no other errors and figure out what is going on. It could also be possible that the rule is being interpreted differently under Lark/Python and by chance, the tests are passing.
+
+Update: Removing the last regex rule no longer breaks the tests. Keeping it commented out for now.

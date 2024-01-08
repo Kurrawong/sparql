@@ -99,6 +99,40 @@ class SparqlSerializer(Visitor_Recursive):
     def query_unit(self, tree: Tree):
         self._query(tree.children[0])
 
+    def _ask_query(self, ask_query: Tree):
+        for child in ask_query.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "dataset_clause":
+                    self._dataset_clause(child)
+                elif child.data == "where_clause":
+                    self._where_clause(child)
+                elif child.data == "solution_modifier":
+                    self._solution_modifier(child)
+                else:
+                    raise ValueError(f"Unexpected ask_query value type: {child.data}")
+            else:
+                raise TypeError(f"Unexpected ask_query value type: {type(child)}")
+
+    def _describe_query(self, describe_query: Tree):
+        for child in describe_query.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "var_or_iri":
+                    self._var_or_iri(child)
+                elif child.data == "dataset_clause":
+                    self._dataset_clause(child)
+                elif child.data == "where_clause":
+                    self._where_clause(child)
+                elif child.data == "solution_modifier":
+                    self._solution_modifier(child)
+                else:
+                    raise ValueError(f"Unexpected describe_query value type: {child.data}")
+            else:
+                raise TypeError(f"Unexpected describe_query value type: {type(child)}")
+
     def _query(self, query: Tree):
         prologue = query.children[0]
         self._prologue(prologue)
@@ -108,6 +142,10 @@ class SparqlSerializer(Visitor_Recursive):
             self._select_query(query_instance)
         elif query_instance.data == "construct_query":
             self._construct_query(query_instance)
+        elif query_instance.data == "describe_query":
+            self._describe_query(query_instance)
+        elif query_instance.data == "ask_query":
+            self._ask_query(query_instance)
         else:
             raise ValueError(f"Unexpected query_instance value type: {query_instance.data}")
 
@@ -382,34 +420,26 @@ class SparqlSerializer(Visitor_Recursive):
         self._group_graph_pattern(group_graph_pattern)
 
     def _built_in_call(self, built_in_call: Tree):
-        value = built_in_call.children[0]
-        if isinstance(value, Tree):
-            if value.data == "aggregate":
-                self._aggregate(value)
-            elif value.data == "regex_expression":
-                self._regex_expression(value)
-            elif value.data == "exists_func":
-                self._exists_func(value)
-            elif value.data == "not_exists_func":
-                self._not_exists_func(value)
+        for child in built_in_call.children:
+            if isinstance(child, Tree):
+                if child.data == "aggregate":
+                    self._aggregate(child)
+                elif child.data == "expression":
+                    self._expression(child)
+                elif child.data == "expression_list":
+                    self._expression_list(child)
+                elif child.data == "regex_expression":
+                    self._regex_expression(child)
+                elif child.data == "exists_func":
+                    self._exists_func(child)
+                elif child.data == "not_exists_func":
+                    self._not_exists_func(child)
+                else:
+                    raise ValueError(f"Unexpected built_in_call tree value type: {child.data}")
+            elif isinstance(child, Token):
+                self._result += f"{child.value} "
             else:
-                raise ValueError(f"Unexpected built_in_call tree value type: {value.data}")
-        elif isinstance(value, Token):
-            if value.value.lower() == "str":
-                self._result += f"{value.value}"
-                self._result += "("
-                expression = built_in_call.children[1]
-                self._expression(expression)
-                self._result += ")"
-            elif value.value.lower() == "concat":
-                self._result += f"{value.value}"
-                expression_list = built_in_call.children[1]
-                self._expression_list(expression_list)
-            else:
-                raise ValueError(f"Unexpected built_in_call token value: {value.value}")
-        else:
-            # TODO: Add other options.
-            raise NotImplementedError
+                raise TypeError(f"Unexpected built_in_call value type: {type(child)}")
 
     def _iri_or_function(self, iri_or_function):
         for child in iri_or_function.children:
@@ -517,9 +547,9 @@ class SparqlSerializer(Visitor_Recursive):
     def _conditional_and_expression(self, conditional_and_expression: Tree):
         value_logicals = list(filter(lambda x: x.data == "value_logical", conditional_and_expression.children))
         for i, value_logical in enumerate(value_logicals):
-            if i != 0 and i + 1 != len(value_logicals):
-                self._result += " && "
             self._value_logical(value_logical)
+            if i + 1 != len(value_logicals):
+                self._result += " && "
 
     def _conditional_or_expression(self, conditional_or_expression: Tree):
         conditional_and_expressions = list(filter(lambda x: x.data == "conditional_and_expression", conditional_or_expression.children))
@@ -927,12 +957,17 @@ class SparqlSerializer(Visitor_Recursive):
         self._result += ")"
 
     def _arg_list(self, arg_list: Tree):
-        for child in arg_list.children:
+        for i, child in enumerate(arg_list.children):
             if isinstance(child, Token):
                 self._result += f"{child.value} "
             elif isinstance(child, Tree):
                 if child.data == "expression":
+                    # TODO: For some reason, lark won't extract the COMMA token.
+                    #   Workaround is to add our own comma for now.
                     self._expression(child)
+                    next_child = arg_list.children[i + 1]
+                    if isinstance(next_child, Tree) and next_child.data == "expression":
+                        self._result += ", "
                 else:
                     raise ValueError(f"Unexpected arg_list value type: {child.data}")
             else:
