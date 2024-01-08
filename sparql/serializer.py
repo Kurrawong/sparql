@@ -901,7 +901,6 @@ class SparqlSerializer(Visitor_Recursive):
 
     def _verb_path(self, verb_path: Tree):
         path = verb_path.children[0]
-        self._result += f"{'\t' * self._indent}"
         self._path(path)
 
     def _collection(self, collection: Tree):
@@ -995,7 +994,7 @@ class SparqlSerializer(Visitor_Recursive):
     def _property_list_path_not_empty_other(
         self, property_list_path_not_empty_other: Tree
     ):
-        self._result += ";\n"
+        self._result += f";\n{'\t' * (self._indent + 1)}"
 
         if property_list_path_not_empty_other.children:
             property_list_path_not_empty_rest = (
@@ -1343,7 +1342,7 @@ class SparqlSerializer(Visitor_Recursive):
                 )
 
     def _inline_data_one_var(self, inline_data_one_var: Tree):
-        for child in inline_data_one_var.children:
+        for i, child in enumerate(inline_data_one_var.children):
             if isinstance(child, Token):
                 if child.value == "{":
                     self._result += "{\n"
@@ -1354,7 +1353,13 @@ class SparqlSerializer(Visitor_Recursive):
                     self._var(child)
                 elif child.data == "data_block_value":
                     self._indent += 1
-                    self._result += f"{'\t' * self._indent}"
+                    next_child = inline_data_one_var.children[i + 1]
+                    if (
+                        isinstance(next_child, Tree)
+                        and next_child.data == "data_block_value"
+                    ):
+                        self._result += f"{'\t' * self._indent}"
+
                     self._data_block_value(child)
                     self._indent -= 1
 

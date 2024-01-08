@@ -2,8 +2,9 @@ from sparql.parser import sparql_parser
 from sparql.serializer import SparqlSerializer
 
 query = """
-SELECT * { } VALUES () { }
-
+PREFIX foaf:   <http://xmlns.com/foaf/0.1/>
+SELECT ( CONCAT(?G, " ", ?S) AS ?name )
+WHERE  { ?P foaf:givenName ?G ; foaf:surname ?S }
 """
 
 tree = sparql_parser.parse(query)
