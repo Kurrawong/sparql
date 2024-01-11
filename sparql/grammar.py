@@ -2,6 +2,8 @@ grammar = r"""query_unit: query
 
 query: prologue ( select_query | construct_query | describe_query | ask_query ) values_clause
 
+update_unit: update
+
 prologue: ( base_decl | prefix_decl )*
 
 base_decl: base iriref
@@ -170,7 +172,7 @@ built_in_call: aggregate
                | /COALESCE/i expression_list
                | /IF/i LEFT_PARENTHESIS expression COMMA expression COMMA expression RIGHT_PARENTHESIS
                | /STRLANG/i LEFT_PARENTHESIS expression COMMA expression RIGHT_PARENTHESIS
-               | /STRDTZ/i LEFT_PARENTHESIS expression COMMA expression RIGHT_PARENTHESIS
+               | /STRDT/i LEFT_PARENTHESIS expression COMMA expression RIGHT_PARENTHESIS
                | /sameTerm/i LEFT_PARENTHESIS expression COMMA expression RIGHT_PARENTHESIS
                | /isIRI/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
                | /isURI/i LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
@@ -181,9 +183,9 @@ built_in_call: aggregate
                | exists_func
                | not_exists_func
 
-substring_expression: /SUBSTR/i "(" expression "," expression ( "," expression )? ")"
+substring_expression: /SUBSTR/i LEFT_PARENTHESIS expression COMMA expression ( COMMA expression )? RIGHT_PARENTHESIS
 
-str_replace_expression: /REPLACE/i "(" expression "," expression "," expression ( "," expression )? ")"
+str_replace_expression: /REPLACE/i LEFT_PARENTHESIS expression COMMA expression COMMA expression ( COMMA expression )? RIGHT_PARENTHESIS
 
 regex_expression: /REGEX/i "(" expression "," expression ( "," expression )? ")"
 
@@ -284,6 +286,62 @@ expression_list: NIL | "(" expression ( "," expression )* ")"
 
 values_clause: ( /VALUES/i data_block )?
 
+update: prologue ( update1 ( SEMICOLON update )? )?
+
+update1: load 
+         | clear 
+         | drop 
+         | add 
+         | move 
+         | copy 
+         | create 
+         | insert_data 
+         | delete_data 
+         | delete_where 
+         | modify
+
+load: /LOAD/i /SILENT/i? iri ( /INTO/i graph_ref )?
+
+clear: /CLEAR/i /SILENT/i? graph_ref_all
+
+drop: /DROP/i /SILENT/i? graph_ref_all
+
+add: /ADD/i /SILENT/i? graph_or_default /TO/i graph_or_default
+
+move: /MOVE/i /SILENT/i? graph_or_default /TO/i graph_or_default
+
+copy: /COPY/i /SILENT/i? graph_or_default /TO/i graph_or_default
+
+create: /CREATE/i /SILENT/i? graph_ref
+
+insert_data: /INSERT DATA/i quad_data
+
+delete_data: /DELETE DATA/i quad_data
+
+delete_where: /DELETE WHERE/i quad_pattern
+
+modify: ( /WITH/i iri )? (delete_clause insert_clause? | insert_clause ) using_clause* /WHERE/i group_graph_pattern
+
+delete_clause: /DELETE/i quad_pattern
+
+insert_clause: /INSERT/i quad_pattern
+
+using_clause: /USING/i ( iri | /NAMED/i iri )
+
+graph_ref: /GRAPH/i iri
+
+graph_ref_all: graph_ref | /DEFAULT/i | /NAMED/i | /ALL/i
+
+quad_data: LEFT_CURLY_BRACE quads RIGHT_CURLY_BRACE
+
+quads: triples_template? ( quads_not_triples DOT? triples_template? )*
+
+quads_not_triples: /GRAPH/i var_or_iri LEFT_CURLY_BRACE triples_template? RIGHT_CURLY_BRACE
+
+quad_pattern: LEFT_CURLY_BRACE quads RIGHT_CURLY_BRACE
+
+graph_or_default: /DEFAULT/i | /GRAPH/i? iri
+
 data_block: inline_data_one_var | inline_data_full
 
 inline_data_one_var: var LEFT_CURLY_BRACE data_block_value* RIGHT_CURLY_BRACE
@@ -294,7 +352,7 @@ data_block_value_group: LEFT_PARENTHESIS data_block_value* RIGHT_PARENTHESIS | N
 
 data_block_value: iri | rdf_literal | numeric_literal | boolean_literal | UNDEF
 
-string: STRING_LITERAL1 | STRING_LITERAL2 | STRING_LITERAL_LONG1 | STRING_LITERAL_LONG2 | ESCAPED_STRING
+string: STRING_LITERAL1 | STRING_LITERAL2 | STRING_LITERAL_LONG1 | STRING_LITERAL_LONG2
 
 iri: iriref | prefixed_name
 
@@ -416,7 +474,7 @@ LEFT_CURLY_BRACE: "{"
 
 RIGHT_CURLY_BRACE: "}"
 
-IRIREF: "<" (/[^<>"{}|^`\\\x00-\x20]/)* ">"
+IRIREF: "<" (/[^<>"{}|^`\\\u0000-\u0020]/)* ">"
 
 LANGTAG: "@" /[a-zA-Z]/+ ("-" /[a-zA-Z0-9]/+)*
 
@@ -446,15 +504,15 @@ VAR2: "$" VARNAME
 
 VARNAME: ( PN_CHARS_U | /[0-9]/ ) ( PN_CHARS_U | /[0-9]/ | "\u00B7" | /[\u0300-\u036F]/ | /[\u203F-\u2040]/ )*
 
-STRING_LITERAL1: "'" ( (/[^\x27\\x5C\u000A\u000D]/) | ECHAR )* "'"
+STRING_LITERAL1: "'" ( (/[^\u0027\u005C\u000A\u000D]/) | ECHAR )* "'"
 
-STRING_LITERAL2: "\"" ( (/[^\x22\\x5C\u000A\u000D]/) | ECHAR )* "\""
+STRING_LITERAL2: "\"" ( (/[^\u0022\u005C\u000A\u000D]/) | ECHAR )* "\""
 
-STRING_LITERAL_LONG1: "'''" ( ( "'" | "'" )? ( /[^'\\]/ | ECHAR ) )* "'''"
+STRING_LITERAL_LONG1: "'''" ( ( "'" | "''" )? ( /[^'\\]/ | ECHAR ) )* "'''"
 
-STRING_LITERAL_LONG2: "\"\"\"" ( ( "\"" | "\"" )? ( /[^"\\]/ | ECHAR ) )* "\"\"\""
+STRING_LITERAL_LONG2: "\"\"\"" ( ( "\"" | "\"\"" )? ( /[^"\\]/ | ECHAR ) )* "\"\"\""
 
-ECHAR: "\\" /[tbnrf\"']/
+ECHAR: "\\" /[tbnrf\\"']/
 
 PNAME_LN: PNAME_NS PN_LOCAL
 

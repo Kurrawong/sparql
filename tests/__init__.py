@@ -22,7 +22,7 @@ def files_from_data_directory(
         xfail = {}
 
     source_path = TEST_DIR / "data" / data_directory
-    file_paths = list(source_path.glob("*.rq"))
+    file_paths = list(source_path.glob("**/*.rq")) + list(source_path.glob("**/*.ru"))
 
     for file_path in file_paths:
         value = str(file_path.relative_to(TEST_DIR))

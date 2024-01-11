@@ -102,8 +102,292 @@ class SparqlSerializer(Visitor_Recursive):
 
         self._result += "\n"
 
-    def query_unit(self, tree: Tree):
-        self._query(tree.children[0])
+    def query_unit(self, query_unit: Tree):
+        self._query(query_unit.children[0])
+
+    def update_unit(self, update_unit: Tree):
+        self._update(update_unit.children[0])
+
+    def _graph_ref(self, graph_ref: Tree):
+        graph_str = graph_ref.children[0]
+        self._result += f"{graph_str} "
+        iri = graph_ref.children[1]
+        self._iri(iri)
+
+    def _load(self, load: Tree):
+        for child in load.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "iri":
+                    self._iri(child)
+                elif child.data == "graph_ref":
+                    self._graph_ref(child)
+                else:
+                    raise ValueError(f"Unexpected load value type: {child.data}")
+            else:
+                raise TypeError(f"Unexpected load value type: {type(child)}")
+
+    def _graph_ref_all(self, graph_ref_all):
+        value = graph_ref_all.children[0]
+        if isinstance(value, Token):
+            self._result += f"{value.value} "
+        elif isinstance(value, Tree):
+            if value.data == "graph_ref":
+                self._graph_ref(value)
+            else:
+                raise ValueError(f"Unexpected graph_ref_all value type: {value.data}")
+        else:
+            raise TypeError(f"Unexpected graph_ref_all value type: {type(value)}")
+
+    def _clear(self, clear: Tree):
+        for child in clear.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "graph_ref_all":
+                    self._graph_ref_all(child)
+                else:
+                    raise ValueError(f"Unexpected clear value type: {child.data}")
+            else:
+                raise TypeError(f"Unexpected clear value type: {type(child)}")
+
+    def _drop(self, drop: Tree):
+        for child in drop.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "graph_ref_all":
+                    self._graph_ref_all(child)
+                else:
+                    raise ValueError(f"Unexpected drop value type: {child.data}")
+            else:
+                raise TypeError(f"Unexpected drop value type: {type(child)}")
+
+    def _graph_or_default(self, graph_or_default: Tree):
+        for child in graph_or_default.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "iri":
+                    self._iri(child)
+                else:
+                    raise ValueError(
+                        f"Unexpected graph_or_default value type: {child.data}"
+                    )
+            else:
+                raise TypeError(
+                    f"Unexpected graph_or_default value type: {type(child)}"
+                )
+
+    def _add(self, add: Tree):
+        for child in add.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "graph_or_default":
+                    self._graph_or_default(child)
+                else:
+                    raise ValueError(f"Unexpected add value type: {child.data}")
+            else:
+                raise TypeError(f"Unexpected add value type: {type(child)}")
+
+    def _move(self, move: Tree):
+        for child in move.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "graph_or_default":
+                    self._graph_or_default(child)
+                else:
+                    raise ValueError(f"Unexpected move value type: {child.data}")
+            else:
+                raise TypeError(f"Unexpected move value type: {type(child)}")
+
+    def _copy(self, copy: Tree):
+        for child in copy.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "graph_or_default":
+                    self._graph_or_default(child)
+                else:
+                    raise ValueError(f"Unexpected copy value type: {child.data}")
+            else:
+                raise TypeError(f"Unexpected move copy type: {type(child)}")
+
+    def _create(self, create: Tree):
+        for child in create.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "graph_ref":
+                    self._graph_ref(child)
+                else:
+                    raise ValueError(f"Unexpected create value type: {child.data}")
+            else:
+                raise TypeError(f"Unexpected move create type: {type(child)}")
+
+    def _quads_not_triples(self, quads_not_triples: Tree):
+        for child in quads_not_triples.children:
+            if isinstance(child, Token):
+                if child.value == "{":
+                    self._result += "{\n"
+                elif child.value == "}":
+                    self._result += f"\n{'\t' * self._indent}}}"
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "var_or_iri":
+                    self._var_or_iri(child)
+                elif child.data == "triples_template":
+                    self._indent += 1
+                    self._triples_template(child)
+                    self._indent -= 1
+                else:
+                    raise ValueError(
+                        f"Unexpected quads_not_triples value type: {child.data}"
+                    )
+            else:
+                raise TypeError(
+                    f"Unexpected quads_not_triples value type: {type(child)}"
+                )
+
+    def _quads(self, quads: Tree):
+        for child in quads.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "triples_template":
+                    self._triples_template(child)
+                elif child.data == "quads_not_triples":
+                    self._quads_not_triples(child)
+                else:
+                    raise ValueError(f"Unexpected quads value type: {child.data}")
+            else:
+                raise TypeError(f"Unexpected quads value type: {type(child)}")
+
+    def _quad_data(self, quad_data: Tree):
+        self._result += "{\n"
+        self._indent += 1
+        quads = quad_data.children[1]
+        self._quads(quads)
+        self._indent -= 1
+        self._result += f"\n{'\t' * self._indent}}}"
+
+    def _insert_data(self, insert_data: Tree):
+        insert_data_str = insert_data.children[0]
+        self._result += f"{insert_data_str} "
+        quad_data = insert_data.children[1]
+        self._quad_data(quad_data)
+
+    def _delete_data(self, delete_data: Tree):
+        delete_data_str = delete_data.children[0]
+        self._result += f"{delete_data_str} "
+        quad_data = delete_data.children[1]
+        self._quad_data(quad_data)
+
+    def _quad_pattern(self, quad_pattern: Tree):
+        quads = quad_pattern.children[1]
+        self._result += "{\n"
+        self._indent += 1
+        self._quads(quads)
+        self._indent -= 1
+        self._result += f"\n{'\t' * self._indent}}}"
+
+    def _delete_where(self, delete_where: Tree):
+        delete_where_str = delete_where.children[0]
+        self._result += f"{delete_where_str} "
+        quad_pattern = delete_where.children[1]
+        self._quad_pattern(quad_pattern)
+
+    def _delete_clause(self, delete_clause: Tree):
+        delete_str = delete_clause.children[0]
+        self._result += f"{delete_str} "
+        quad_pattern = delete_clause.children[1]
+        self._quad_pattern(quad_pattern)
+
+    def _insert_clause(self, insert_clause: Tree):
+        insert_str = insert_clause.children[0]
+        self._result += f"{insert_str} "
+        quad_pattern = insert_clause.children[1]
+        self._quad_pattern(quad_pattern)
+
+    def _using_clause(self, using_clause: Tree):
+        for child in using_clause.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "iri":
+                    self._iri(child)
+                else:
+                    raise ValueError(
+                        f"Unexpected using_clause value type: {child.data}"
+                    )
+            else:
+                raise TypeError(f"Unexpected using_clause value type: {type(child)}")
+
+    def _modify(self, modify: Tree):
+        for child in modify.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "iri":
+                    self._iri(child)
+                elif child.data == "delete_clause":
+                    self._delete_clause(child)
+                elif child.data == "insert_clause":
+                    self._insert_clause(child)
+                elif child.data == "using_clause":
+                    self._using_clause(child)
+                elif child.data == "group_graph_pattern":
+                    self._group_graph_pattern(child)
+                else:
+                    raise ValueError(f"Unexpected modify value type: {child.data}")
+            else:
+                raise TypeError(f"Unexpected modify value type: {type(child)}")
+
+    def _update1(self, update1: Tree):
+        value = update1.children[0]
+        if value.data == "load":
+            self._load(value)
+        elif value.data == "clear":
+            self._clear(value)
+        elif value.data == "drop":
+            self._drop(value)
+        elif value.data == "add":
+            self._add(value)
+        elif value.data == "move":
+            self._move(value)
+        elif value.data == "copy":
+            self._copy(value)
+        elif value.data == "create":
+            self._create(value)
+        elif value.data == "insert_data":
+            self._insert_data(value)
+        elif value.data == "delete_data":
+            self._delete_data(value)
+        elif value.data == "delete_where":
+            self._delete_where(value)
+        elif value.data == "modify":
+            self._modify(value)
+        else:
+            raise ValueError(f"Unexpected update1 value type: {value.data}")
+
+    def _update(self, update: Tree):
+        for child in update.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "prologue":
+                    self._prologue(child)
+                elif child.data == "update1":
+                    self._update1(child)
+                elif child.data == "update":
+                    self._update(child)
+                else:
+                    raise ValueError(f"Unexpected update value type: {child.data}")
+            else:
+                raise TypeError(f"Unexpected update value type: {child.data}")
 
     def _ask_query(self, ask_query: Tree):
         for child in ask_query.children:
@@ -502,6 +786,38 @@ class SparqlSerializer(Visitor_Recursive):
         group_graph_pattern = not_exists_func.children[2]
         self._group_graph_pattern(group_graph_pattern)
 
+    def _substring_expression(self, substring_expression: Tree):
+        for child in substring_expression.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "expression":
+                    self._expression(child)
+                else:
+                    raise ValueError(
+                        f"Unexpected substring_expression value type: {child.data}"
+                    )
+            else:
+                raise TypeError(
+                    f"Unexpected substring_expression value type: {type(child)}"
+                )
+
+    def _str_replace_expression(self, str_replace_expression):
+        for child in str_replace_expression.children:
+            if isinstance(child, Token):
+                self._result += f"{child.value} "
+            elif isinstance(child, Tree):
+                if child.data == "expression":
+                    self._expression(child)
+                else:
+                    raise ValueError(
+                        f"Unexpected str_replace_expression value type: {child.data}"
+                    )
+            else:
+                raise TypeError(
+                    f"Unexpected str_replace_expression value type: {type(child)}"
+                )
+
     def _built_in_call(self, built_in_call: Tree):
         for child in built_in_call.children:
             if isinstance(child, Tree):
@@ -511,6 +827,10 @@ class SparqlSerializer(Visitor_Recursive):
                     self._expression(child)
                 elif child.data == "expression_list":
                     self._expression_list(child)
+                elif child.data == "substring_expression":
+                    self._substring_expression(child)
+                elif child.data == "str_replace_expression":
+                    self._str_replace_expression(child)
                 elif child.data == "regex_expression":
                     self._regex_expression(child)
                 elif child.data == "exists_func":
@@ -753,6 +1073,7 @@ class SparqlSerializer(Visitor_Recursive):
         property_list_not_empty = blank_node_property_list_path.children[0]
         self._result += "[\n"
         self._indent += 1
+        self._result += f"{'\t' * self._indent}"
         self._property_list_path_not_empty(property_list_not_empty)
         self._indent -= 1
         self._result += f"\n{'\t' * self._indent}]\n"
@@ -789,6 +1110,7 @@ class SparqlSerializer(Visitor_Recursive):
         self._graph_node_path(graph_node_path)
 
     def _object_list_path(self, object_list_path: Tree):
+        self._result += " "
         object_path = object_list_path.children[0]
         self._object_path(object_path)
 
@@ -1256,7 +1578,7 @@ class SparqlSerializer(Visitor_Recursive):
 
     def _group_graph_pattern(self, group_graph_pattern: Tree):
         self._indent += 1
-        self._result += "{\n"
+        self._result += f"{'\t' * (self._indent - 1)}{{\n"
 
         value = group_graph_pattern.children[0]
         if value.data == "sub_select":
