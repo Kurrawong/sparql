@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "sparql-parser"
+name = "sparql"
 version = "0.1.0"
 description = ""
 authors = ["Edmond Chuc <edmond@kurrawong.ai>"]
 readme = "README.md"
-packages = [{include = "sparql_parser"}]
+packages = [{include = "sparql"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
