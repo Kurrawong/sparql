@@ -2,6 +2,14 @@
 
 This package provides parsers and serializers for the [SPARQL 1.1 Query Language](https://www.w3.org/TR/sparql11-query/).
 
+## Install
+
+Replace `<version>` with the latest GitHub release.
+
+```shell
+pip install https://github.com/Kurrawong/sparql/archive/refs/tags/<version>.zip
+```
+
 ## Usage
 
 ```python
