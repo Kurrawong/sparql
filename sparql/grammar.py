@@ -314,11 +314,11 @@ copy: /COPY/i /SILENT/i? graph_or_default /TO/i graph_or_default
 
 create: /CREATE/i /SILENT/i? graph_ref
 
-insert_data: /INSERT DATA/i quad_data
+insert_data: /INSERT/i /DATA/i quad_data
 
-delete_data: /DELETE DATA/i quad_data
+delete_data: /DELETE/i /DATA/i quad_data
 
-delete_where: /DELETE WHERE/i quad_pattern
+delete_where: /DELETE/i /WHERE/i quad_pattern
 
 modify: ( /WITH/i iri )? (delete_clause insert_clause? | insert_clause ) using_clause* /WHERE/i group_graph_pattern
 
@@ -474,7 +474,7 @@ LEFT_CURLY_BRACE: "{"
 
 RIGHT_CURLY_BRACE: "}"
 
-IRIREF: "<" (/[^<>"{}|^`\\\u0000-\u0020]/)* ">"
+IRIREF: "<" (/[^<>"{}|^`\\\u0000-\u0020]/ | UCHAR)* ">"
 
 LANGTAG: "@" /[a-zA-Z]/+ ("-" /[a-zA-Z0-9]/+)*
 
@@ -504,15 +504,17 @@ VAR2: "$" VARNAME
 
 VARNAME: ( PN_CHARS_U | /[0-9]/ ) ( PN_CHARS_U | /[0-9]/ | "\u00B7" | /[\u0300-\u036F]/ | /[\u203F-\u2040]/ )*
 
-STRING_LITERAL1: "'" ( (/[^\u0027\u005C\u000A\u000D]/) | ECHAR )* "'"
+STRING_LITERAL1: "'" ( (/[^\u0027\u005C\u000A\u000D]/) | ECHAR | UCHAR )* "'"
 
-STRING_LITERAL2: "\"" ( (/[^\u0022\u005C\u000A\u000D]/) | ECHAR )* "\""
+STRING_LITERAL2: "\"" ( (/[^\u0022\u005C\u000A\u000D]/) | ECHAR | UCHAR )* "\""
 
-STRING_LITERAL_LONG1: "'''" ( ( "'" | "''" )? ( /[^'\\]/ | ECHAR ) )* "'''"
+STRING_LITERAL_LONG1: "'''" ( ( "'" | "''" )? ( /[^'\\]/ | ECHAR | UCHAR ) )* "'''"
 
-STRING_LITERAL_LONG2: "\"\"\"" ( ( "\"" | "\"\"" )? ( /[^"\\]/ | ECHAR ) )* "\"\"\""
+STRING_LITERAL_LONG2: "\"\"\"" ( ( "\"" | "\"\"" )? ( /[^"\\]/ | ECHAR | UCHAR) )* "\"\"\""
 
-ECHAR: "\\" /[tbnrf\\"']/
+ECHAR: "\\" /[tbnrf"'\\]/
+
+UCHAR: "\\u" HEX~4 | "\\U" HEX~8
 
 PNAME_LN: PNAME_NS PN_LOCAL
 

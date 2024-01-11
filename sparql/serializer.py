@@ -235,7 +235,8 @@ class SparqlSerializer(Visitor_Recursive):
                     self._result += "{\n"
                 elif child.value == "}":
                     self._result += f"\n{'\t' * self._indent}}}"
-                self._result += f"{child.value} "
+                else:
+                    self._result += f"{child.value} "
             elif isinstance(child, Tree):
                 if child.data == "var_or_iri":
                     self._var_or_iri(child)
@@ -275,15 +276,17 @@ class SparqlSerializer(Visitor_Recursive):
         self._result += f"\n{'\t' * self._indent}}}"
 
     def _insert_data(self, insert_data: Tree):
-        insert_data_str = insert_data.children[0]
-        self._result += f"{insert_data_str} "
-        quad_data = insert_data.children[1]
+        insert_str = insert_data.children[0]
+        data_str = insert_data.children[1]
+        self._result += f"{insert_str} {data_str} "
+        quad_data = insert_data.children[2]
         self._quad_data(quad_data)
 
     def _delete_data(self, delete_data: Tree):
-        delete_data_str = delete_data.children[0]
-        self._result += f"{delete_data_str} "
-        quad_data = delete_data.children[1]
+        delete_str = delete_data.children[0]
+        data_str = delete_data.children[1]
+        self._result += f"{delete_str} {data_str} "
+        quad_data = delete_data.children[2]
         self._quad_data(quad_data)
 
     def _quad_pattern(self, quad_pattern: Tree):
@@ -295,9 +298,10 @@ class SparqlSerializer(Visitor_Recursive):
         self._result += f"\n{'\t' * self._indent}}}"
 
     def _delete_where(self, delete_where: Tree):
-        delete_where_str = delete_where.children[0]
-        self._result += f"{delete_where_str} "
-        quad_pattern = delete_where.children[1]
+        delete_str = delete_where.children[0]
+        where_str = delete_where.children[1]
+        self._result += f"{delete_str} {where_str} "
+        quad_pattern = delete_where.children[2]
         self._quad_pattern(quad_pattern)
 
     def _delete_clause(self, delete_clause: Tree):
@@ -499,13 +503,13 @@ class SparqlSerializer(Visitor_Recursive):
             self._construct_triples(nested_construct_triples)
 
     def _construct_template(self, construct_template: Tree):
+        self._result += " {\n"
+        self._indent += 1
         if len(construct_template.children) == 1:
             construct_triples = construct_template.children[0]
-            self._result += " {\n"
-            self._indent += 1
             self._construct_triples(construct_triples)
-            self._indent -= 1
-            self._result += "\n}"
+        self._indent -= 1
+        self._result += "\n}"
 
     def _group_condition_expression_as_var(
         self, group_condition_expression_as_var: Tree
@@ -1041,20 +1045,26 @@ class SparqlSerializer(Visitor_Recursive):
     def _blank_node(self, blank_node: Tree):
         self._result += f"{blank_node.children[0].value} "
 
+    def _boolean_literal(self, boolean_literal: Tree):
+        self._result += f"{boolean_literal.children[0].children[0].value} "
+
     def _graph_term(self, graph_term: Tree):
         value = graph_term.children[0]
-        if value.data == "iri":
-            self._iri(value)
-        elif value.data == "rdf_literal":
-            self._rdf_literal(value)
-        elif value.data == "numeric_literal":
-            self._numeric_literal(value)
-        elif value.data == "boolean_literal":
-            raise NotImplementedError
-        elif value.data == "blank_node":
-            self._blank_node(value)
+        if isinstance(value, Token):
+            self._result += f"{value.value} "
         else:
-            raise ValueError(f"Unexpected graph_term value type: {value.data}")
+            if value.data == "iri":
+                self._iri(value)
+            elif value.data == "rdf_literal":
+                self._rdf_literal(value)
+            elif value.data == "numeric_literal":
+                self._numeric_literal(value)
+            elif value.data == "boolean_literal":
+                self._boolean_literal(value)
+            elif value.data == "blank_node":
+                self._blank_node(value)
+            else:
+                raise ValueError(f"Unexpected graph_term value type: {value.data}")
 
     def _var_or_term(self, var_or_term: Tree):
         value = var_or_term.children[0]
@@ -1711,6 +1721,8 @@ class SparqlSerializer(Visitor_Recursive):
                 elif child.value == "(":
                     self._result += f"{child.value}"
                 elif child.value == ")":
+                    self._result += f"{child.value} "
+                elif child.value == "()":
                     self._result += f"{child.value} "
                 else:
                     raise ValueError(f"Unexpected data block value: {child.value}")

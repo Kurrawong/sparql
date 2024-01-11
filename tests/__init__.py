@@ -8,7 +8,7 @@ TEST_DIR = Path(__file__).parent
 
 
 def files_from_data_directory(
-    data_directory: str, xfail: dict[str, str] = None
+    data_directory: Path, xfail: dict[Path, str] = None
 ) -> Iterator[str | ParameterSet]:
     """Return an iterator of files for a paramtrized test.
 
@@ -21,12 +21,11 @@ def files_from_data_directory(
     if xfail is None:
         xfail = {}
 
-    source_path = TEST_DIR / "data" / data_directory
-    file_paths = list(source_path.glob("**/*.rq")) + list(source_path.glob("**/*.ru"))
+    file_paths = list(data_directory.glob("**/*.rq")) + list(data_directory.glob("**/*.ru"))
 
     for file_path in file_paths:
-        value = str(file_path.relative_to(TEST_DIR))
+        value = file_path.resolve()
         if value not in xfail:
-            yield value
+            yield str(value)
         else:
-            yield pytest.param(value, marks=pytest.mark.xfail(reason=xfail[value]))
+            yield pytest.param(str(value), marks=pytest.mark.xfail(reason=xfail[file_path.resolve()]))
