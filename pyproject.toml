@@ -1,7 +1,8 @@
 [tool.poetry]
 name = "sparql"
 version = "0.1.0"
-description = ""
+description = "This package provides parsers and serializers for the SPARQL 1.1 Query Language."
+license = "MIT"
 authors = ["Edmond Chuc <edmond@kurrawong.ai>"]
 readme = "README.md"
 packages = [{include = "sparql"}]
@@ -9,7 +10,6 @@ packages = [{include = "sparql"}]
 [tool.poetry.dependencies]
 python = "^3.12"
 lark = "^1.1.8"
-
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"
