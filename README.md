@@ -2,6 +2,8 @@
 
 This package provides parsers and serializers for the [SPARQL 1.1 Query Language](https://www.w3.org/TR/sparql11-query/).
 
+Note: This is not a SPARQL processing engine.
+
 ## Install
 
 Replace `<version>` with the latest GitHub release.
@@ -40,6 +42,43 @@ new_tree = sparql_parser.parse(sparql_serializer.result)
 print(f"\nQuery is the same: {tree == new_tree}")
 assert tree == new_tree
 
+```
+
+## Convenience Functions
+
+### Function `sparql.format_string`
+
+For a given SPARQL query string, return a formatted SPARQL query string. This function by default will perform a guess on whether to use a SPARQL 1.1 parser or SPARQL 1.1 Update parser. Otherwise, a specific parser can be specified as a second argument.
+
+```python
+import sparql
+
+result = sparql.format_string(
+    """
+    select distinct ?s (count(?s) as ?count)
+    FROM <http://dbpedia.org>
+    FROM NAMED <http://dbpedia.org>
+    where {
+        ?s ?p ?o .
+        ?o ?pp ?oo ;
+            ?ppp ?ooo .
+        OPTIONAL {
+            ?s a ?o .
+        } .
+        ?o2 ?p2 ?o3 .
+    }
+"""
+)
+
+assert result
+
+result = sparql.format_string(
+    """
+    LOAD <http://example.org/faraway> INTO GRAPH <localCopy>
+"""
+)
+
+assert result
 ```
 
 ## Conformance
