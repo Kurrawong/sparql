@@ -1,14 +1,15 @@
-from sparql.parser import sparql_update_parser as sparql_parser
+from sparql.parser import sparql_parser as sparql_parser
 from sparql.serializer import SparqlSerializer
 
 query = r'''
-PREFIX : <http://www.example.org/>
+prefix ex:	<http://www.example.org/schema#>
+prefix in:	<http://www.example.org/instance#>
 
-INSERT DATA { 
-              GRAPH<g1> { _:b1 :p :o } 
-              GRAPH<g2> { _:b1 :p :o } 
-            }
-
+select ?x where {
+graph ?g {
+  {select ?x where {?x ?p ?g}}
+}
+}
 '''
 
 tree = sparql_parser.parse(query)

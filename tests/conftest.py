@@ -1,7 +1,7 @@
 from pathlib import Path
 
-import pytest
 import lark
+import pytest
 
 from sparql.parser import sparql_parser, sparql_update_parser
 from sparql.serializer import SparqlSerializer
@@ -18,7 +18,10 @@ def test_roundtrip():
             parser = sparql_parser
             try:
                 tree = parser.parse(query)
-            except (lark.exceptions.UnexpectedCharacters, lark.exceptions.UnexpectedInput):
+            except (
+                lark.exceptions.UnexpectedCharacters,
+                lark.exceptions.UnexpectedInput,
+            ):
                 parser = sparql_update_parser
                 tree = parser.parse(query)
 

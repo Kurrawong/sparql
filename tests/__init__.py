@@ -21,11 +21,15 @@ def files_from_data_directory(
     if xfail is None:
         xfail = {}
 
-    file_paths = list(data_directory.glob("**/*.rq")) + list(data_directory.glob("**/*.ru"))
+    file_paths = list(data_directory.glob("**/*.rq")) + list(
+        data_directory.glob("**/*.ru")
+    )
 
     for file_path in file_paths:
         value = file_path.resolve()
         if value not in xfail:
             yield str(value)
         else:
-            yield pytest.param(str(value), marks=pytest.mark.xfail(reason=xfail[file_path.resolve()]))
+            yield pytest.param(
+                str(value), marks=pytest.mark.xfail(reason=xfail[file_path.resolve()])
+            )

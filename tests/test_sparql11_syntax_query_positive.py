@@ -5,7 +5,7 @@ import pytest
 from tests import files_from_data_directory
 
 current_dir = Path(__file__).parent
-data_dir = current_dir / 'data/sparql11_syntax_query_test_suite/positive'
+data_dir = current_dir / "data/sparql11_syntax_query_test_suite/positive"
 
 
 @pytest.mark.parametrize(

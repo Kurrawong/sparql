@@ -1,7 +1,7 @@
 import shutil
 from pathlib import Path
 
-from rdflib import Graph, RDF, Namespace, URIRef
+from rdflib import RDF, Graph, Namespace, URIRef
 from rdflib.collection import Collection
 
 MF = Namespace("http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#")
