@@ -6,8 +6,8 @@ def get_prefixed_name(prefixed_name: Tree) -> str:
     return prefixed_name.children[0].value
 
 
-def get_iriref(iriref: Tree) -> str:
-    return iriref.children[0].value
+def get_iriref(iriref: Token) -> str:
+    return iriref.value
 
 
 def get_rdf_literal(rdf_literal: Tree) -> str:
@@ -39,9 +39,9 @@ def get_value(tree: Tree, memory: list[Token] = None) -> list[Token]:
 
 def get_iri(iri: Tree) -> str:
     value = iri.children[0]
-    if value.data == "iriref":
+    if isinstance(value, Token):
         return get_iriref(value)
-    elif value.data == "prefixed_name":
+    elif isinstance(value, Tree):
         return get_prefixed_name(value)
     else:
         raise ValueError(f"Unexpected iri type: {value.data}")
